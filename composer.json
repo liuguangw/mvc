@@ -1,0 +1,30 @@
+{
+	"name": "liuguang/mvc",
+	"description": "a php7 framework by liuguang",
+	"type": "library",
+	"homepage": "http://blog.liuguangw.com",
+	"license": "MIT",
+	"require": {
+		"php": ">=7.0"
+	},
+	"keywords": [
+		"php7",
+		"framework"
+	],
+	"authors": [
+		{
+			"name": "liuguang",
+			"email": "67579722@qq.com",
+			"homepage": "http://blog.liuguangw.com",
+			"role": "Developer"
+		}
+	],
+	"support": {
+		"email": "67579722@qq.com"
+	},
+	"autoload": {
+		"psr-4": {
+			"liuguang\\mvc\\" : "src/"
+		}
+	}
+}
