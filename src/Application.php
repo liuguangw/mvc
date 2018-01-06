@@ -12,7 +12,12 @@ use liuguang\mvc\data\DataMap;
 class Application
 {
 
-    private static $app = null;
+    /**
+     * 应用实例
+     * 
+     * @var Application
+     */
+    public static $app = null;
 
     /**
      * mvc源代码(src)目录
@@ -22,48 +27,68 @@ class Application
     public $mvcSourcePath;
 
     /**
+     * 应用配置对象
      *
      * @var DataMap
      */
-    public $config;
+    public $config=null;
 
-    /**
-     * 启动项目
-     *
-     * @param DataMap $config
-     *            配置对象
-     */
-    public static function init(DataMap $config = null): void
-    {
-        if (self::$app === null) {
-            $app = new static($config);
-            self::$app = $app;
-            $app->startApp();
-        }
-    }
-
-    /**
-     * 构造方法
-     *
-     * @param DataMap $config
-     *            配置对象
-     */
-    private function __construct(DataMap $config = null)
+    public function __construct()
     {
         $this->mvcSourcePath = __DIR__;
-        $mvcConfig = DataMap::loadFromPhpFile($this->mvcSourcePath . '/../config.inc.php');
-        if($config!==null){
-            $mvcConfig->mergeData($config);
-        }
-        $this->config=$mvcConfig;
     }
 
     /**
-     * @todo
+     * 启动应用
+     * 
+     * @return void
      */
-    private function startApp(): void
+    public function startApp(): void
     {
-        var_dump($this->config);
+        if(self::$app!==null){
+            return ;
+        }
+        self::$app = $this;
+        if(!defined('APP_PATH')){
+            exit('APP_PATH is not defined !');
+        }
+        if(!defined('APP_CONFIG_PATH')){
+            define('APP_CONFIG_PATH', APP_PATH.'/./config');
+        }
+        //加载框架配置文件
+        $config=DataMap::loadFromPhpFile($this->mvcSourcePath.'/../config.inc.php');
+        //应用配置
+        if($this->config===null){
+            $appConfigFile=APP_CONFIG_PATH.'/./config.inc.php';
+            if(is_file($appConfigFile)){
+                $appConfig=DataMap::loadFromPhpFile($appConfigFile);
+                $config->mergeData($appConfig);
+            }
+        }else{
+            $config->mergeData($this->config);
+        }
+        $this->config=$config;
+        $this->loadErrorHandler();
+        $this->loadRouteHandler();
+        //@todo
+    }
+    
+    /**
+     * 加载错误处理器
+     * 
+     * @return void
+     */
+    private function loadErrorHandler():void{
+        
+    }
+    
+    /**
+     * 加载路由
+     *
+     * @return void
+     */
+    private function loadRouteHandler():void{
+        
     }
 }
 
