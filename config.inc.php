@@ -1,4 +1,4 @@
 <?php
 return [
-    'test'=>123
+    'ERROR_HANDLER'=>'liuguang\mvc\ErrorHandler'
 ];

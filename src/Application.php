@@ -2,6 +2,8 @@
 namespace liuguang\mvc;
 
 use liuguang\mvc\data\DataMap;
+use liuguang\mvc\event\EventDispatcher;
+use liuguang\mvc\event\common\ApplicationErrorEvent;
 
 /**
  * 应用主类
@@ -11,10 +13,11 @@ use liuguang\mvc\data\DataMap;
  */
 class Application
 {
+    use EventDispatcher;
 
     /**
      * 应用实例
-     * 
+     *
      * @var Application
      */
     public static $app = null;
@@ -31,7 +34,7 @@ class Application
      *
      * @var DataMap
      */
-    public $config=null;
+    public $config = null;
 
     public function __construct()
     {
@@ -40,55 +43,69 @@ class Application
 
     /**
      * 启动应用
-     * 
+     *
      * @return void
      */
     public function startApp(): void
     {
-        if(self::$app!==null){
-            return ;
+        if (self::$app !== null) {
+            return;
         }
         self::$app = $this;
-        if(!defined('APP_PATH')){
+        if (! defined('APP_PATH')) {
             exit('APP_PATH is not defined !');
         }
-        if(!defined('APP_CONFIG_PATH')){
-            define('APP_CONFIG_PATH', APP_PATH.'/./config');
+        if (! defined('APP_CONFIG_PATH')) {
+            define('APP_CONFIG_PATH', APP_PATH . '/./config');
         }
-        //加载框架配置文件
-        $config=DataMap::loadFromPhpFile($this->mvcSourcePath.'/../config.inc.php');
-        //应用配置
-        if($this->config===null){
-            $appConfigFile=APP_CONFIG_PATH.'/./config.inc.php';
-            if(is_file($appConfigFile)){
-                $appConfig=DataMap::loadFromPhpFile($appConfigFile);
+        // 加载框架配置文件
+        $config = DataMap::loadFromPhpFile($this->mvcSourcePath . '/../config.inc.php');
+        // 应用配置
+        if ($this->config === null) {
+            $appConfigFile = APP_CONFIG_PATH . '/./config.inc.php';
+            if (is_file($appConfigFile)) {
+                $appConfig = DataMap::loadFromPhpFile($appConfigFile);
                 $config->mergeData($appConfig);
             }
-        }else{
+        } else {
             $config->mergeData($this->config);
         }
-        $this->config=$config;
+        $this->config = $config;
         $this->loadErrorHandler();
         $this->loadRouteHandler();
-        //@todo
     }
-    
+
     /**
      * 加载错误处理器
-     * 
+     *
      * @return void
      */
-    private function loadErrorHandler():void{
-        
+    private function loadErrorHandler(): void
+    {
+        $errorHandlerClass = $this->config->getValue('ERROR_HANDLER');
+        $errorHandler = new $errorHandlerClass();
+        // 添加错误事件处理
+        $this->addEventListener(ApplicationErrorEvent::class, [
+            $errorHandler,
+            'handleError'
+        ]);
+        // 当发生错误或者异常时,发送事件
+        set_exception_handler(function ($exception) {
+            $this->dispatchEvent(new ApplicationErrorEvent($exception));
+        });
+        set_error_handler(function ($errno, $errstr, $errfile, $errline, $errcontext) {
+            $this->dispatchEvent(ApplicationErrorEvent::createCustom($errno, $errstr));
+        });
     }
-    
+
     /**
      * 加载路由
      *
      * @return void
      */
-    private function loadRouteHandler():void{
-        
+    private function loadRouteHandler(): void
+    {
+        throw new \Exception('todo');
     }
 }
 
