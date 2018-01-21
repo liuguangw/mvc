@@ -4,6 +4,8 @@ namespace liuguang\mvc;
 use liuguang\mvc\data\DataMap;
 use liuguang\mvc\event\EventDispatcher;
 use liuguang\mvc\event\common\ApplicationErrorEvent;
+use liuguang\mvc\http\UrlHelper;
+use liuguang\mvc\http\RouteInfo;
 
 /**
  * 应用主类
@@ -35,6 +37,19 @@ class Application
      * @var DataMap
      */
     public $config = null;
+
+    /**
+     * URL处理工具
+     *
+     * @var \liuguang\mvc\http\UrlHelper
+     */
+    public $url;
+
+    /**
+     *
+     * @var \liuguang\mvc\http\RouteHandler
+     */
+    private $routeHandler;
 
     public function __construct()
     {
@@ -73,6 +88,12 @@ class Application
         $this->config = $config;
         $this->loadErrorHandler();
         $this->loadRouteHandler();
+        $url = '/';
+        if (isset($_SERVER['REQUEST_URI'])) {
+            $url = $_SERVER['REQUEST_URI'];
+        }
+        $routeInfo = $this->routeHandler->getRouteInfo($url);
+        $this->invokeRoute($routeInfo);
     }
 
     /**
@@ -105,7 +126,28 @@ class Application
      */
     private function loadRouteHandler(): void
     {
-        throw new \Exception('todo');
+        $context = '';
+        $pos = strrpos($_SERVER['SCRIPT_NAME'], '/');
+        if ($pos > 0) {
+            $context = substr($_SERVER['SCRIPT_NAME'], 0, $pos);
+        }
+        //
+        $routeHandlerClass = $this->config->getValue('ROUTE_HANDLER');
+        $this->routeHandler = new $routeHandlerClass();
+        $this->url = new UrlHelper($this->routeHandler, $context);
+    }
+
+    /**
+     * 执行路由程序
+     *
+     * @param RouteInfo $routeInfo            
+     * @return void
+     */
+    public function invokeRoute(RouteInfo $routeInfo): void
+    {
+        echo '<pre>';
+        var_dump($routeInfo);
+        echo '</pre>';
     }
 }
 
