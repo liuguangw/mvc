@@ -6,6 +6,11 @@ use liuguang\mvc\event\EventArgs;
 class ApplicationErrorEvent extends EventArgs
 {
 
+    /**
+     * 错误信息
+     * 
+     * @var \Throwable
+     */
     public $errorInfo;
 
     public function __construct(\Throwable $errorInfo)
@@ -18,7 +23,7 @@ class ApplicationErrorEvent extends EventArgs
      * 
      * @param int $code
      * @param string $message
-     * @return \liuguang\mvc\event\common\ApplicationErrorEvent
+     * @return static
      */
     public static function createCustom(int $code, string $message)
     {

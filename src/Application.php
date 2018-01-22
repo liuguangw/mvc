@@ -6,6 +6,8 @@ use liuguang\mvc\event\EventDispatcher;
 use liuguang\mvc\event\common\ApplicationErrorEvent;
 use liuguang\mvc\http\UrlHelper;
 use liuguang\mvc\http\RouteInfo;
+use liuguang\mvc\event\common\RouteErrorEvent;
+use liuguang\mvc\http\Controller;
 
 /**
  * 应用主类
@@ -88,6 +90,8 @@ class Application
         $this->config = $config;
         $this->loadErrorHandler();
         $this->loadRouteHandler();
+        $this->loadRouteErrorHandler();
+        //
         $url = '/';
         if (isset($_SERVER['REQUEST_URI'])) {
             $url = $_SERVER['REQUEST_URI'];
@@ -138,6 +142,22 @@ class Application
     }
 
     /**
+     * 加载路由错误处理接口
+     *
+     * @return void
+     */
+    private function loadRouteErrorHandler(): void
+    {
+        $errorHandlerClass = $this->config->getValue('ROUTE_ERROR_HANDLER');
+        $errorHandler = new $errorHandlerClass();
+        // 添加错误事件处理
+        $this->addEventListener(RouteErrorEvent::class, [
+            $errorHandler,
+            'handleError'
+        ]);
+    }
+
+    /**
      * 执行路由程序
      *
      * @param RouteInfo $routeInfo            
@@ -145,9 +165,29 @@ class Application
      */
     public function invokeRoute(RouteInfo $routeInfo): void
     {
-        echo '<pre>';
-        var_dump($routeInfo);
-        echo '</pre>';
+        $controllerClass = $this->config->getValue('APP_NAMESPACE') . '\\controllers\\' . str_replace('.', '\\', $routeInfo->getControllerName());
+        if (! class_exists($controllerClass)) {
+            $event = RouteErrorEvent::createCustom(404, $routeInfo->getControllerName() . '/' . $routeInfo->getActionName() . '对应的控制器类' . $controllerClass . '不存在');
+            $event->httpErrorCode = 404;
+            $this->dispatchEvent($event);
+            return;
+        }
+        $this->invokeController(new $controllerClass(), $routeInfo);
+    }
+
+    /**
+     * 执行控制器
+     *
+     * @param Controller $controller
+     *            控制器
+     * @param RouteInfo $routeInfo
+     *            路由信息
+     * @return void
+     */
+    private function invokeController(Controller $controller, RouteInfo $routeInfo)
+    {
+        $actionResult = $controller->beforeAction($routeInfo);
+        $actionResult->executeResult();
     }
 }
 
