@@ -1,6 +1,12 @@
 <?php
 namespace liuguang\mvc\http\action;
 
+/**
+ * 内容响应
+ * 
+ * @author liuguang
+ *
+ */
 class ContentResult implements ActionResult
 {
 
