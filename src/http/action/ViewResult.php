@@ -43,6 +43,13 @@ class ViewResult implements ActionResult
     private $tplDistPath;
 
     /**
+     * 布局文件路径
+     *
+     * @var string
+     */
+    private $layoutPath;
+
+    /**
      * 是否禁用模板缓存
      *
      * @var bool
@@ -72,11 +79,16 @@ class ViewResult implements ActionResult
 
     /**
      */
-    public function __construct(string $viewName, ?DataMap $params = null)
+    public function __construct(string $viewName, ?string $layout = null, ?DataMap $params = null)
     {
         $app = Application::$app;
         $this->tplSrcPath = $app->config->getValue('VIEW_PATH') . '/./src/' . $viewName . '.tpl';
         $this->tplDistPath = $app->config->getValue('VIEW_PATH') . '/./dist/' . $viewName . '.php';
+        if ($layout === null) {
+            $this->layoutPath = null;
+        } else {
+            $this->layoutPath = $app->config->getValue('LAYOUT_PATH') . '/./' . $layout . '.tpl';
+        }
         $this->disableTplCache = $app->config->getValue('DISABLE_TPL_CACHE');
         if ($params === null) {
             $data = [];
@@ -118,11 +130,25 @@ class ViewResult implements ActionResult
             Application::$app->dispatchEvent(ApplicationErrorEvent::createCustom(500, '读取模板文件' . $this->tplSrcPath . '失败'));
             return '<!--error-->';
         }
+        if ($this->layoutPath !== null) {
+            $this->processLayout($content);
+        }
         // 处理include标签
         // /
         // /<!--{include mobile/header}-->
         // /
         $this->processIncludeTag($content);
+        // 处理变量输出
+        // /
+        // /{$a}
+        // /
+        $this->processVars($content);
+        // 处理变量输出(过滤特殊符号)
+        // /
+        // /{text $a}
+        // /
+        $this->processTextVars($content);
+        
         return $content;
     }
 
@@ -177,6 +203,22 @@ class ViewResult implements ActionResult
     }
 
     /**
+     * 将模板和布局文件合并
+     *
+     * @param string $content
+     *            模板内容
+     * @return void
+     */
+    private function processLayout(string &$content): void
+    {
+        $layoutContent = @file_get_contents($this->layoutPath);
+        if ($layoutContent === false) {
+            Application::$app->dispatchEvent(ApplicationErrorEvent::createCustom(500, '读取布局文件' . $this->layoutPath . '失败'));
+        }
+        $content = str_replace('{content}', $content, $layoutContent);
+    }
+
+    /**
      * 处理include标签
      *
      * @param string $content
@@ -195,6 +237,36 @@ class ViewResult implements ActionResult
     }
 
     /**
+     * 处理变量输出
+     *
+     * @param string $content
+     *            原模板内容
+     * @return void
+     */
+    private function processVars(string &$content): void
+    {
+        $pattern = '/\{(\$.+?)\}/';
+        $content = preg_replace_callback($pattern, function ($match) {
+            return '<?php echo ' . $match[1] . '; ?>';
+        }, $content);
+    }
+
+    /**
+     * 处理变量输出(过滤HTML特殊符号)
+     *
+     * @param string $content
+     *            原模板内容
+     * @return void
+     */
+    private function processTextVars(string &$content): void
+    {
+        $pattern = '/\{text\s+(\$.+?)\}/';
+        $content = preg_replace_callback($pattern, function ($match) {
+            return '<?php echo str_replace([\'&\',\'<\',\'>\'],[\'&amp;\',\'&lt;\',\'&gt;\'],' . $match[1] . '); ?>';
+        }, $content);
+    }
+
+    /**
      *
      * {@inheritdoc}
      *
@@ -202,7 +274,7 @@ class ViewResult implements ActionResult
      */
     public function executeResult(): void
     {
-        $params = $this->params;
+        extract($this->params->toArray());
         include $this->getViewPath();
     }
 }

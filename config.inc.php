@@ -7,5 +7,6 @@ return [
     'ACTION_METHOD_PREFIX' => 'action',
     'ERROR_HANDLER_SHOW_SOURCE' => true, // 默认的错误处理器是否展示源码
     'VIEW_PATH' => dirname(APP_PATH) . DIRECTORY_SEPARATOR . 'view',
+    'LAYOUT_PATH' => dirname(APP_PATH) . DIRECTORY_SEPARATOR . 'view' . DIRECTORY_SEPARATOR . 'layout',
     'DISABLE_TPL_CACHE' => true
 ];

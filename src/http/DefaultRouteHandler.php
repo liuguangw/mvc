@@ -54,19 +54,21 @@ class DefaultRouteHandler implements RouteHandler
      *
      * @see \liuguang\mvc\http\RouteHandler::createUrl()
      */
-    public function createUrl(RouteInfo $routeInfo): string
+    public function createUrl(string $controllerName, string $actionName, ?DataMap $params = null): string
     {
-        $params = $routeInfo->getParams();
-        if ($params->containsKey($this->controllerKey)) {
-            $params->remove($this->controllerKey);
+        $data = [
+            $this->controllerKey => $controllerName,
+            $this->actionKey => $actionName
+        ];
+        if ($params != null) {
+            if ($params->containsKey($this->controllerKey)) {
+                $params->remove($this->controllerKey);
+            }
+            if ($params->containsKey($this->actionKey)) {
+                $params->remove($this->actionKey);
+            }
+            $data = array_merge($data, $params->toArray());
         }
-        if ($params->containsKey($this->actionKey)) {
-            $params->remove($this->actionKey);
-        }
-        $data = array_merge([
-            $this->controllerKey => $routeInfo->getControllerName(),
-            $this->actionKey => $routeInfo->getActionName()
-        ], $params->toArray());
         return '/?' . http_build_query($data);
     }
 }

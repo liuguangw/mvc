@@ -27,6 +27,13 @@ class Application
     public static $app = null;
 
     /**
+     * web上下文路径
+     *
+     * @var string
+     */
+    public $appContext;
+
+    /**
      * mvc源代码(src)目录
      *
      * @var string
@@ -56,6 +63,18 @@ class Application
     public function __construct()
     {
         $this->mvcSourcePath = __DIR__;
+        if (! defined('APP_PATH')) {
+            exit('APP_PATH is not defined !');
+        }
+        if (! defined('APP_CONFIG_PATH')) {
+            define('APP_CONFIG_PATH', APP_PATH . '/./config');
+        }
+        $context = '';
+        $pos = strrpos($_SERVER['SCRIPT_NAME'], '/');
+        if ($pos > 0) {
+            $context = substr($_SERVER['SCRIPT_NAME'], 0, $pos);
+        }
+        $this->appContext = $context;
     }
 
     /**
@@ -69,12 +88,6 @@ class Application
             return;
         }
         self::$app = $this;
-        if (! defined('APP_PATH')) {
-            exit('APP_PATH is not defined !');
-        }
-        if (! defined('APP_CONFIG_PATH')) {
-            define('APP_CONFIG_PATH', APP_PATH . '/./config');
-        }
         // 加载框架配置文件
         $config = DataMap::loadFromPhpFile($this->mvcSourcePath . '/../config.inc.php');
         // 应用配置
@@ -130,15 +143,9 @@ class Application
      */
     private function loadRouteHandler(): void
     {
-        $context = '';
-        $pos = strrpos($_SERVER['SCRIPT_NAME'], '/');
-        if ($pos > 0) {
-            $context = substr($_SERVER['SCRIPT_NAME'], 0, $pos);
-        }
-        //
         $routeHandlerClass = $this->config->getValue('ROUTE_HANDLER');
         $this->routeHandler = new $routeHandlerClass();
-        $this->url = new UrlHelper($this->routeHandler, $context);
+        $this->url = new UrlHelper($this->routeHandler, $this->appContext);
     }
 
     /**
@@ -186,7 +193,8 @@ class Application
      */
     private function invokeController(Controller $controller, RouteInfo $routeInfo)
     {
-        $actionResult = $controller->beforeAction($routeInfo);
+        $controller->setRouteInfo($routeInfo);
+        $actionResult = $controller->beforeAction();
         $actionResult->executeResult();
     }
 }

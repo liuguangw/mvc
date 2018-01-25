@@ -1,6 +1,8 @@
 <?php
 namespace liuguang\mvc\http;
 
+use liuguang\mvc\data\DataMap;
+
 class UrlHelper
 {
 
@@ -16,15 +18,17 @@ class UrlHelper
 
     /**
      * url生成
-     *
-     * @param RouteInfo $routeInfo            
-     * @param bool $isFullUrl            
-     * @param array $fullUrlInfo            
+     * 
+     * @param string $controllerName 控制器名
+     * @param string $actionName 操作名
+     * @param DataMap $params 路由参数
+     * @param bool $isFullUrl 是否返回完整url
+     * @param array $fullUrlInfo 完整url特别指定信息
      * @return string
      */
-    public function createUrl(RouteInfo $routeInfo, bool $isFullUrl = false, array $fullUrlInfo = []): string
+    public function createUrl(string $controllerName, string $actionName, ?DataMap $params=null, bool $isFullUrl = false, array $fullUrlInfo = []): string
     {
-        $resourcePath = $this->routeHandler->createUrl($routeInfo);
+        $resourcePath = $this->routeHandler->createUrl($controllerName, $actionName, $params);
         return $this->getPublicUrl($resourcePath, $isFullUrl, $fullUrlInfo);
     }
 
