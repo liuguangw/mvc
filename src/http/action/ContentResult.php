@@ -3,44 +3,34 @@ namespace liuguang\mvc\http\action;
 
 /**
  * 内容响应
- * 
- * @author liuguang
  *
+ * @author liuguang
+ *        
  */
-class ContentResult implements ActionResult
+class ContentResult extends ActionResult
 {
 
     /**
      * 内容
-     * 
+     *
      * @var string
      */
     public $content = '';
 
-    /**
-     * 文档类型
-     * 
-     * @var string
-     */
-    public $contentType = 'text/html; charset=utf-8';
-
-    /**
-     * 状态码
-     * 
-     * @var integer
-     */
-    public $statusCode = 200;
+    public function __construct(string $content)
+    {
+        $this->content = $content;
+        $this->initExtraHeaders();
+    }
 
     /**
      *
      * {@inheritdoc}
      *
-     * @see \liuguang\mvc\http\action\ActionResult::executeResult()
+     * @see \liuguang\mvc\http\action\ActionResult::outputContent()
      */
-    public function executeResult(): void
+    protected function outputContent(): void
     {
-        http_response_code($this->statusCode);
-        header('Content-Type: '.$this->contentType);
         echo $this->content;
     }
 }

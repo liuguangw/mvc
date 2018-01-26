@@ -11,22 +11,8 @@ use liuguang\mvc\event\common\ApplicationErrorEvent;
  * @author liuguang
  *        
  */
-class ViewResult implements ActionResult
+class ViewResult extends ActionResult
 {
-
-    /**
-     * 文档类型
-     *
-     * @var string
-     */
-    public $contentType = 'text/html; charset=utf-8';
-
-    /**
-     * 状态码
-     *
-     * @var integer
-     */
-    public $statusCode = 200;
 
     /**
      * 模板源文件路径
@@ -61,7 +47,7 @@ class ViewResult implements ActionResult
      *
      * @var DataMap
      */
-    private $params;
+    public $params;
 
     /**
      * 开始标签
@@ -106,16 +92,6 @@ class ViewResult implements ActionResult
     {
         $view = new static($viewName);
         return $view->getViewPath();
-    }
-
-    /**
-     * 获取模板变量
-     *
-     * @return DataMap
-     */
-    public function getParams(): DataMap
-    {
-        return $this->params;
     }
 
     /**
@@ -270,9 +246,9 @@ class ViewResult implements ActionResult
      *
      * {@inheritdoc}
      *
-     * @see \liuguang\mvc\http\action\ActionResult::executeResult()
+     * @see \liuguang\mvc\http\action\ActionResult::outputContent()
      */
-    public function executeResult(): void
+    protected function outputContent(): void
     {
         extract($this->params->toArray());
         include $this->getViewPath();

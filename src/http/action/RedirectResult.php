@@ -7,15 +7,8 @@ namespace liuguang\mvc\http\action;
  * @author liuguang
  *        
  */
-class RedirectResult implements ActionResult
+class RedirectResult extends ActionResult
 {
-
-    /**
-     * 是否为永久性转移
-     *
-     * @var bool
-     */
-    public $permanent = false;
 
     /**
      * 目标url
@@ -24,16 +17,22 @@ class RedirectResult implements ActionResult
      */
     public $url;
 
+    public function __construct(string $url, bool $permanent = false)
+    {
+        $this->url = $url;
+        $this->statusCode = $permanent ? 301 : 302;
+        $this->contentType='';
+        $this->initExtraHeaders();
+    }
+
     /**
      *
      * {@inheritdoc}
      *
-     * @see \liuguang\mvc\http\action\ActionResult::executeResult()
+     * @see \liuguang\mvc\http\action\ActionResult::outputContent()
      */
-    public function executeResult(): void
+    protected function outputContent(): void
     {
-        $statusCode = $this->permanent ? 301 : 302;
-        http_response_code($statusCode);
         header('Location: ' . $this->url);
     }
 }

@@ -54,12 +54,12 @@ class ErrorHandler
         $errFile = '<span style="color:red;">[file]</span> ' . $file . ' on line <b>' . $line . '</b>';
         $showSource = Application::$app->config->getValue('ERROR_HANDLER_SHOW_SOURCE');
         $mainSource = '';
-        $showMainSourceFn = '';
+        $showMainSourceFn = 'javascript:void(0);';
         if ($showSource) {
             $mainSource = 'filesArr.push(' . json_encode($file) . ');
 linesArr.push(' . $line . ');
 contentArr.push(' . json_encode(htmlspecialchars(file_get_contents($file))) . ');';
-            $showMainSourceFn = ' onclick="show_source_main();"';
+            $showMainSourceFn = 'show_source_main();';
         }
         $content = str_replace([
             '{mainTitle}',
@@ -80,9 +80,8 @@ contentArr.push(' . json_encode(htmlspecialchars(file_get_contents($file))) . ')
             $mainSource,
             $showMainSourceFn
         ], $content);
-        $actionResult = new ContentResult();
+        $actionResult = new ContentResult($content);
         $actionResult->statusCode = $httpCode;
-        $actionResult->content = $content;
         $actionResult->executeResult();
         exit();
     }

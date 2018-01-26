@@ -3,11 +3,11 @@ namespace liuguang\mvc\http\action;
 
 /**
  * json响应
- * 
- * @author liuguang
  *
+ * @author liuguang
+ *        
  */
-class JsonResult implements ActionResult
+class JsonResult extends ActionResult
 {
 
     /**
@@ -25,35 +25,29 @@ class JsonResult implements ActionResult
     public $encodeOptions = 0;
 
     /**
-     * 文档类型
-     *
-     * @var string
-     */
-    public $contentType = 'application/json; charset=utf-8';
-
-    /**
      * 状态码
      *
      * @var integer
      */
     public $statusCode = 200;
 
-    private function outputJson(array $data)
+    public function __construct(array $data, int $encodeOptions = 0)
     {
-        http_response_code($this->statusCode);
-        header('Content-Type: ' . $this->contentType);
-        echo json_encode($data, $this->encodeOptions);
+        $this->contentType = 'application/json; charset=utf-8';
+        $this->data = $data;
+        $this->encodeOptions = $encodeOptions;
+        $this->initExtraHeaders();
     }
 
     /**
      *
      * {@inheritdoc}
      *
-     * @see \liuguang\mvc\http\action\ActionResult::executeResult()
+     * @see \liuguang\mvc\http\action\ActionResult::outputContent()
      */
-    public function executeResult(): void
+    protected function outputContent(): void
     {
-        $this->outputJson($this->data);
+        echo json_encode($this->data, $this->encodeOptions);
     }
 }
 

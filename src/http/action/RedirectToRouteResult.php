@@ -2,6 +2,7 @@
 namespace liuguang\mvc\http\action;
 
 use liuguang\mvc\Application;
+use liuguang\mvc\http\RouteInfo;
 
 /**
  * 跳转路由页面
@@ -9,15 +10,8 @@ use liuguang\mvc\Application;
  * @author liuguang
  *        
  */
-class RedirectToRouteResult implements ActionResult
+class RedirectToRouteResult extends ActionResult
 {
-
-    /**
-     * 是否为永久性转移
-     *
-     * @var bool
-     */
-    public $permanent = false;
 
     /**
      * 路由信息
@@ -26,18 +20,26 @@ class RedirectToRouteResult implements ActionResult
      */
     public $routeInfo;
 
+    public function __construct(RouteInfo $routeInfo, bool $permanent = false)
+    {
+        $this->routeInfo = $routeInfo;
+        $this->statusCode = $permanent ? 301 : 302;
+        $this->contentType = '';
+        $this->initExtraHeaders();
+    }
+
     /**
      *
      * {@inheritdoc}
      *
-     * @see \liuguang\mvc\http\action\ActionResult::executeResult()
+     * @see \liuguang\mvc\http\action\ActionResult::outputContent()
      */
-    public function executeResult(): void
+    protected function outputContent(): void
     {
-        $result = new RedirectResult();
-        $result->permanent = $this->permanent;
-        $result->url = Application::$app->url->createUrl($this->routeInfo);
-        $result->executeResult();
+        $controllerName = $this->routeInfo->getControllerName();
+        $actionName = $this->routeInfo->getActionName();
+        $params = $this->routeInfo->getParams();
+        header('Location: ' . Application::$app->url->createUrl($controllerName, $actionName, $params));
     }
 }
 

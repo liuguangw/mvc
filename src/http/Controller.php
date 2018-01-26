@@ -21,21 +21,21 @@ class Controller
      *
      * @var string
      */
-    public $controllerName;
+    protected $controllerName;
 
     /**
      * 操作名称
      *
      * @var string
      */
-    public $actionName;
+    protected $actionName;
 
     /**
      * 路由参数
      *
      * @var DataMap
      */
-    public $params;
+    protected $params;
 
     /**
      * 布局名
@@ -44,20 +44,18 @@ class Controller
      */
     protected $layout = 'main';
 
-    public function setRouteInfo(RouteInfo $routeInfo)
-    {
-        $this->controllerName = $routeInfo->getControllerName();
-        $this->actionName = $routeInfo->getActionName();
-        $this->params = $routeInfo->getParams();
-    }
-
     /**
      * 执行操作之前的操作
      *
      * @return ActionResult 响应结果
      */
-    public function beforeAction(): ActionResult
+    public function beforeAction(RouteInfo $routeInfo): ActionResult
     {
+        // 初始化属性
+        $this->controllerName = $routeInfo->getControllerName();
+        $this->actionName = $routeInfo->getActionName();
+        $this->params = $routeInfo->getParams();
+        // 获取方法名称
         $app = Application::$app;
         $actionMethodPrefix = $app->config->getValue('ACTION_METHOD_PREFIX');
         $methodName = '';
@@ -68,11 +66,13 @@ class Controller
         }
         $methods = get_class_methods(get_class($this));
         if (in_array($methodName, $methods)) {
+            // 调用方法
             return call_user_func([
                 $this,
                 $methodName
             ]);
         } else {
+            // 404
             $event = RouteErrorEvent::createCustom(404, $this->controllerName . '/' . $this->actionName . '对应的方法' . $methodName . '不存在');
             $event->httpErrorCode = 404;
             $app->dispatchEvent($event);

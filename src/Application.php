@@ -8,6 +8,7 @@ use liuguang\mvc\http\UrlHelper;
 use liuguang\mvc\http\RouteInfo;
 use liuguang\mvc\event\common\RouteErrorEvent;
 use liuguang\mvc\http\Controller;
+use liuguang\mvc\http\action\ActionResult;
 
 /**
  * 应用主类
@@ -191,10 +192,19 @@ class Application
      *            路由信息
      * @return void
      */
-    private function invokeController(Controller $controller, RouteInfo $routeInfo)
+    private function invokeController(Controller $controller, RouteInfo $routeInfo): void
     {
-        $controller->setRouteInfo($routeInfo);
-        $actionResult = $controller->beforeAction();
+        $this->invokeActionResult($controller->beforeAction($routeInfo));
+    }
+
+    /**
+     * 执行响应结果
+     * 
+     * @param ActionResult $actionResult
+     * @return void
+     */
+    private function invokeActionResult(ActionResult $actionResult): void
+    {
         $actionResult->executeResult();
     }
 }
