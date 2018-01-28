@@ -9,6 +9,7 @@ use liuguang\mvc\http\RouteInfo;
 use liuguang\mvc\event\common\RouteErrorEvent;
 use liuguang\mvc\http\Controller;
 use liuguang\mvc\http\action\ActionResult;
+use liuguang\mvc\http\RouteHandler;
 
 /**
  * 应用主类
@@ -56,10 +57,11 @@ class Application
     public $url;
 
     /**
+     * 路由信息
      *
-     * @var \liuguang\mvc\http\RouteHandler
+     * @var \liuguang\mvc\http\RouteInfo
      */
-    private $routeHandler;
+    public $routeInfo;
 
     public function __construct()
     {
@@ -68,7 +70,10 @@ class Application
             exit('APP_PATH is not defined !');
         }
         if (! defined('APP_CONFIG_PATH')) {
-            define('APP_CONFIG_PATH', APP_PATH . '/./config');
+            define('APP_CONFIG_PATH', APP_PATH . '/../config');
+        }
+        if (! defined('MODULE_PATH')) {
+            define('MODULE_PATH', APP_PATH . '/../module');
         }
         $context = '';
         $pos = strrpos($_SERVER['SCRIPT_NAME'], '/');
@@ -103,15 +108,9 @@ class Application
         }
         $this->config = $config;
         $this->loadErrorHandler();
-        $this->loadRouteHandler();
         $this->loadRouteErrorHandler();
-        //
-        $url = '/';
-        if (isset($_SERVER['REQUEST_URI'])) {
-            $url = $_SERVER['REQUEST_URI'];
-        }
-        $routeInfo = $this->routeHandler->getRouteInfo($url);
-        $this->invokeRoute($routeInfo);
+        $this->loadRouteHandler();
+        $this->invokeRoute();
     }
 
     /**
@@ -145,8 +144,14 @@ class Application
     private function loadRouteHandler(): void
     {
         $routeHandlerClass = $this->config->getValue('ROUTE_HANDLER');
-        $this->routeHandler = new $routeHandlerClass();
-        $this->url = new UrlHelper($this->routeHandler, $this->appContext);
+        $routeHandler = new $routeHandlerClass();
+        // 解析URL
+        $url = '/';
+        if (isset($_SERVER['REQUEST_URI'])) {
+            $url = $_SERVER['REQUEST_URI'];
+        }
+        $this->routeInfo = $routeHandler->getRouteInfo($url);
+        $this->url = new UrlHelper($routeHandler, $this->appContext);
     }
 
     /**
@@ -166,41 +171,105 @@ class Application
     }
 
     /**
-     * 执行路由程序
+     * 执行路由
      *
-     * @param RouteInfo $routeInfo            
      * @return void
      */
-    public function invokeRoute(RouteInfo $routeInfo): void
+    private function invokeRoute(): void
     {
-        $controllerClass = $this->config->getValue('APP_NAMESPACE') . '\\controllers\\' . str_replace('.', '\\', $routeInfo->getControllerName());
+        $moduleName = $this->routeInfo->moduleName;
+        $controllerName = $this->routeInfo->controllerName;
+        $actionName = $this->routeInfo->actionName;
+        $controllerClass = $this->config->getValue('APP_NAMESPACE') . '\\module\\' . str_replace('.', '\\', $moduleName) . '\\controllers\\' . $controllerName;
         if (! class_exists($controllerClass)) {
-            $event = RouteErrorEvent::createCustom(404, $routeInfo->getControllerName() . '/' . $routeInfo->getActionName() . '对应的控制器类' . $controllerClass . '不存在');
+            $event = RouteErrorEvent::createCustom(404, $moduleName . '/' . $controllerName . '/' . $actionName . '对应的控制器类' . $controllerClass . '不存在');
             $event->httpErrorCode = 404;
             $this->dispatchEvent($event);
             return;
         }
-        $this->invokeController(new $controllerClass(), $routeInfo);
+        $this->invokeController(new $controllerClass());
+    }
+
+    private function invokeController(Controller $controller): void
+    {
+        $moduleName = $this->routeInfo->moduleName;
+        $controllerName = $this->routeInfo->controllerName;
+        $actionName = $this->routeInfo->actionName;
+        $controller->beforeAction($actionName);
+        if (($moduleName != $this->routeInfo->moduleName) || ($controllerName != $this->routeInfo->controllerName)) {
+            // 模块名或者控制器名变化
+            $this->invokeRoute();
+        } else {
+            // 获取操作结果
+            $actionMethodName = $this->routeInfo->actionName;
+            $actionMethodPrefix = $this->config->getValue('ACTION_METHOD_PREFIX');
+            if (! empty($actionMethodPrefix)) {
+                $actionMethodName = $actionMethodPrefix . ucfirst($actionMethodName);
+            }
+            $actionResult = call_user_func([
+                $controller,
+                $actionMethodName
+            ]);
+            $this->invokeActionResult($actionResult);
+        }
     }
 
     /**
-     * 执行控制器
+     * 获取完整的module/controller/action
      *
-     * @param Controller $controller
-     *            控制器
-     * @param RouteInfo $routeInfo
-     *            路由信息
+     * @param string $action            
+     * @return array
+     */
+    public function getFullAction(string $action = ''): array
+    {
+        // 初始化默认值
+        $moduleName = $this->routeInfo->moduleName;
+        $controllerName = $this->routeInfo->controllerName;
+        $actionName = $this->routeInfo->actionName;
+        // 分割
+        if ($action != '') {
+            $arr = explode('/', $action);
+            $arrLength = count($arr);
+            if ($arrLength == 1) {
+                list ($actionName) = $arr;
+            } elseif ($arrLength == 2) {
+                list ($controllerName, $actionName) = $arr;
+            } elseif ($arrLength == 3) {
+                list ($moduleName, $controllerName, $actionName) = $arr;
+            }
+        }
+        return [
+            $moduleName,
+            $controllerName,
+            $actionName
+        ];
+    }
+
+    /**
+     * 调用控制器
+     *
+     * @param string $action
+     *            缺省操作
+     * @param DataMap $params
+     *            路由参数(当为空时,使用当前的路由参数)
      * @return void
      */
-    private function invokeController(Controller $controller, RouteInfo $routeInfo): void
+    public function callAction(string $action, ?DataMap $params = null): void
     {
-        $this->invokeActionResult($controller->beforeAction($routeInfo));
+        list ($moduleName, $controllerName, $actionName) = $this->getFullAction($action);
+        $this->routeInfo->moduleName = $moduleName;
+        $this->routeInfo->controllerName = $controllerName;
+        $this->routeInfo->actionName = $actionName;
+        if ($params != null) {
+            $this->routeInfo->params = $params;
+        }
+        $this->invokeRoute();
     }
 
     /**
      * 执行响应结果
-     * 
-     * @param ActionResult $actionResult
+     *
+     * @param ActionResult $actionResult            
      * @return void
      */
     private function invokeActionResult(ActionResult $actionResult): void

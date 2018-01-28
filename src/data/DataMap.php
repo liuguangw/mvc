@@ -253,8 +253,8 @@ class DataMap implements \Iterator, \ArrayAccess
 
     /**
      * 从php文件加载数据
-     * 
-     * @param string $filePath
+     *
+     * @param string $filePath            
      * @throws CoreException
      * @return DataMap
      */
@@ -263,8 +263,19 @@ class DataMap implements \Iterator, \ArrayAccess
         if (! is_file($filePath)) {
             throw new CoreException(CoreException::FILE_NOT_FOUND, '找不到php文件: ' . $filePath, $filePath);
         }
-        $data=include $filePath;
+        $data = include $filePath;
         return new static($data);
+    }
+
+    /**
+     * 初始化一个新的空映射
+     *
+     * @return DataMap
+     */
+    public static function getNewInstance(): DataMap
+    {
+        $data = [];
+        return new DataMap($data);
     }
 }
 

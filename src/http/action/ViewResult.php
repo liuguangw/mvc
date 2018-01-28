@@ -54,31 +54,31 @@ class ViewResult extends ActionResult
      *
      * @var string
      */
-    private $startTag = '<!--{';
+    private $startTag = '{';
 
     /**
      * 结束标签
      *
      * @var string
      */
-    private $endTag = '}-->';
+    private $endTag = '}';
 
     /**
      */
     public function __construct(string $viewName, ?string $layout = null, ?DataMap $params = null)
     {
         $app = Application::$app;
-        $this->tplSrcPath = $app->config->getValue('VIEW_PATH') . '/./src/' . $viewName . '.tpl';
-        $this->tplDistPath = $app->config->getValue('VIEW_PATH') . '/./dist/' . $viewName . '.php';
+        $viewBasePath = MODULE_PATH . '/./' . str_replace('.', '/', $app->routeInfo->moduleName) . '/view';
+        $this->tplSrcPath = $viewBasePath . '/src/' . $viewName . '.tpl';
+        $this->tplDistPath = $viewBasePath . '/dist/' . $viewName . '.php';
         if ($layout === null) {
             $this->layoutPath = null;
         } else {
-            $this->layoutPath = $app->config->getValue('LAYOUT_PATH') . '/./' . $layout . '.tpl';
+            $this->layoutPath = $viewBasePath . '/layout/' . $layout . '.tpl';
         }
         $this->disableTplCache = $app->config->getValue('DISABLE_TPL_CACHE');
         if ($params === null) {
-            $data = [];
-            $params = new DataMap($data);
+            $params = DataMap::getNewInstance();
         }
         $this->params = $params;
     }
@@ -106,12 +106,14 @@ class ViewResult extends ActionResult
             Application::$app->dispatchEvent(ApplicationErrorEvent::createCustom(500, '读取模板文件' . $this->tplSrcPath . '失败'));
             return '<!--error-->';
         }
+        //除去<!--和-->
+        $content = preg_replace('/\<\!\-\-(\{(.+?)\})\-\-\>/', '\1', $content);
         if ($this->layoutPath !== null) {
             $this->processLayout($content);
         }
         // 处理include标签
         // /
-        // /<!--{include mobile/header}-->
+        // /{include mobile/header}
         // /
         $this->processIncludeTag($content);
         // 处理变量输出
@@ -221,7 +223,7 @@ class ViewResult extends ActionResult
      */
     private function processVars(string &$content): void
     {
-        $pattern = '/\{(\$.+?)\}/';
+        $pattern=$this->getTagPattern('(\$.+?)');
         $content = preg_replace_callback($pattern, function ($match) {
             return '<?php echo ' . $match[1] . '; ?>';
         }, $content);
@@ -236,7 +238,7 @@ class ViewResult extends ActionResult
      */
     private function processTextVars(string &$content): void
     {
-        $pattern = '/\{text\s+(\$.+?)\}/';
+        $pattern=$this->getTagPattern('text\s+(\$.+?)');
         $content = preg_replace_callback($pattern, function ($match) {
             return '<?php echo str_replace([\'&\',\'<\',\'>\'],[\'&amp;\',\'&lt;\',\'&gt;\'],' . $match[1] . '); ?>';
         }, $content);

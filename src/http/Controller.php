@@ -1,9 +1,7 @@
 <?php
 namespace liuguang\mvc\http;
 
-use liuguang\mvc\http\action\ActionResult;
 use liuguang\mvc\Application;
-use liuguang\mvc\event\common\RouteErrorEvent;
 use liuguang\mvc\data\DataMap;
 use liuguang\mvc\http\action\ViewResult;
 
@@ -13,29 +11,8 @@ use liuguang\mvc\http\action\ViewResult;
  * @author liuguang
  *        
  */
-class Controller
+abstract class Controller
 {
-
-    /**
-     * 控制器名称
-     *
-     * @var string
-     */
-    protected $controllerName;
-
-    /**
-     * 操作名称
-     *
-     * @var string
-     */
-    protected $actionName;
-
-    /**
-     * 路由参数
-     *
-     * @var DataMap
-     */
-    protected $params;
 
     /**
      * 布局名
@@ -47,37 +24,10 @@ class Controller
     /**
      * 执行操作之前的操作
      *
-     * @return ActionResult 响应结果
+     * @return void
      */
-    public function beforeAction(RouteInfo $routeInfo): ActionResult
-    {
-        // 初始化属性
-        $this->controllerName = $routeInfo->getControllerName();
-        $this->actionName = $routeInfo->getActionName();
-        $this->params = $routeInfo->getParams();
-        // 获取方法名称
-        $app = Application::$app;
-        $actionMethodPrefix = $app->config->getValue('ACTION_METHOD_PREFIX');
-        $methodName = '';
-        if (empty($actionMethodPrefix)) {
-            $methodName = $this->actionName;
-        } else {
-            $methodName = $actionMethodPrefix . ucfirst($this->actionName);
-        }
-        $methods = get_class_methods(get_class($this));
-        if (in_array($methodName, $methods)) {
-            // 调用方法
-            return call_user_func([
-                $this,
-                $methodName
-            ]);
-        } else {
-            // 404
-            $event = RouteErrorEvent::createCustom(404, $this->controllerName . '/' . $this->actionName . '对应的方法' . $methodName . '不存在');
-            $event->httpErrorCode = 404;
-            $app->dispatchEvent($event);
-        }
-    }
+    public function beforeAction(string $actionName): void
+    {}
 
     /**
      * 以视图响应
@@ -91,7 +41,8 @@ class Controller
     protected function view(DataMap $params, ?string $viewName = null): ViewResult
     {
         if ($viewName == null) {
-            $viewName = str_replace('.', '/', $this->controllerName) . '/' . $this->actionName;
+            $routeInfo = Application::$app->routeInfo;
+            $viewName = $routeInfo->controllerName . '/' . $routeInfo->actionName;
         }
         return new ViewResult($viewName, $this->layout, $params);
     }

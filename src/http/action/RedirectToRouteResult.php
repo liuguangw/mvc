@@ -2,7 +2,7 @@
 namespace liuguang\mvc\http\action;
 
 use liuguang\mvc\Application;
-use liuguang\mvc\http\RouteInfo;
+use liuguang\mvc\data\DataMap;
 
 /**
  * 跳转路由页面
@@ -14,15 +14,22 @@ class RedirectToRouteResult extends ActionResult
 {
 
     /**
-     * 路由信息
+     * 缺省路由
      *
-     * @var \liuguang\mvc\http\RouteInfo
+     * @var string
      */
-    public $routeInfo;
+    public $route;
 
-    public function __construct(RouteInfo $routeInfo, bool $permanent = false)
+    /**
+     *
+     * @var DataMap
+     */
+    public $params;
+
+    public function __construct(string $route, ?DataMap $params = null, bool $permanent = false)
     {
-        $this->routeInfo = $routeInfo;
+        $this->route = $route;
+        $this->params = $params;
         $this->statusCode = $permanent ? 301 : 302;
         $this->contentType = '';
         $this->initExtraHeaders();
@@ -36,10 +43,7 @@ class RedirectToRouteResult extends ActionResult
      */
     protected function outputContent(): void
     {
-        $controllerName = $this->routeInfo->getControllerName();
-        $actionName = $this->routeInfo->getActionName();
-        $params = $this->routeInfo->getParams();
-        header('Location: ' . Application::$app->url->createUrl($controllerName, $actionName, $params));
+        header('Location: ' . Application::$app->url->createUrl($this->route, $this->params));
     }
 }
 

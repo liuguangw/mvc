@@ -12,53 +12,56 @@ use liuguang\mvc\data\DataMap;
 class RouteInfo
 {
 
-    private $controllerName;
-
-    private $actionName;
-
-    private $params;
+    /**
+     * 模块名
+     *
+     * @var string
+     */
+    public $moduleName;
 
     /**
+     * 控制器名
      *
-     * @param string $controllerName            
-     * @param string $actionName            
-     * @param DataMap $params            
+     * @var string
      */
-    public function __construct(string $controllerName, string $actionName, DataMap $params)
+    public $controllerName;
+
+    /**
+     * 操作名
+     *
+     * @var string
+     */
+    public $actionName;
+
+    /**
+     * 路由参数
+     *
+     * @var DataMap
+     */
+    public $params;
+
+    /**
+     * 构造方法
+     *
+     * @param string $moduleName
+     *            模块名
+     * @param string $controllerName
+     *            控制器名
+     * @param string $actionName
+     *            操作名
+     * @param DataMap $params
+     *            路由参数
+     */
+    public function __construct(string $moduleName, string $controllerName, string $actionName, ?DataMap $params = null)
     {
+        $this->moduleName = $moduleName;
         $this->controllerName = $controllerName;
         $this->actionName = $actionName;
-        $this->params = $params;
-    }
-
-    /**
-     * 获取控制器名称
-     *
-     * @return string
-     */
-    public function getControllerName(): string
-    {
-        return $this->controllerName;
-    }
-
-    /**
-     * 获取操作名称
-     *
-     * @return string
-     */
-    public function getActionName(): string
-    {
-        return $this->actionName;
-    }
-    
-    /**
-     * 获取路由参数
-     *
-     * @return string
-     */
-    public function getParams(): DataMap
-    {
-        return $this->params;
+        if ($params === null) {
+            $this->params = DataMap::getNewInstance();
+        } else {
+            $this->params = $params;
+        }
     }
 }
 
