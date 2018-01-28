@@ -95,23 +95,35 @@ class ViewResult extends ActionResult
     }
 
     /**
-     * 获取合并后的模板内容
+     * 获取模板源代码
      *
      * @return string
      */
-    public function getMergedContent(): string
+    public function getTemplateSource(): string
     {
         $content = @file_get_contents($this->tplSrcPath);
         if ($content === false) {
             Application::$app->dispatchEvent(ApplicationErrorEvent::createCustom(500, '读取模板文件' . $this->tplSrcPath . '失败'));
             return '<!--error-->';
         }
-        // 除去<!--和-->
-        $content = preg_replace('/\<\!\-\-(\{(.+?)\})\-\-\>/', '\1', $content);
+        // 与布局文件合并
         if ($this->layoutPath !== null) {
             $this->processLayout($content);
         }
-        // 处理include标签
+        // 除去<!--和-->
+        $content = preg_replace('/\<\!\-\-(\{(.+?)\})\-\-\>/', '\1', $content);
+        return $content;
+    }
+
+    /**
+     * 获取合并后的模板内容
+     *
+     * @return string
+     */
+    private function getMergedContent(): string
+    {
+        $content = $this->getTemplateSource();
+        // 处理include合并
         // /
         // /{include mobile/header}
         // /
@@ -126,7 +138,9 @@ class ViewResult extends ActionResult
         // /{text $a}
         // /
         $this->processTextVars($content);
-        // / 处理不转换的标签
+        // 处理block
+        $this->processBlocks($content);
+        // 处理不转换的标签
         // /
         // /{!}{$val}
         // /
@@ -214,7 +228,7 @@ class ViewResult extends ActionResult
         while (preg_match($pattern, $content) != 0) {
             $content = preg_replace_callback($pattern, function ($match) {
                 $viewResult = new ViewResult($match[1]);
-                return $viewResult->getMergedContent();
+                return $viewResult->getTemplateSource();
             }, $content);
         }
     }
@@ -246,6 +260,29 @@ class ViewResult extends ActionResult
         $pattern = $this->getTagPattern('text\s+(\$.+?)');
         $content = preg_replace_callback($pattern, function ($match) {
             return '<?php echo str_replace([\'&\',\'<\',\'>\'],[\'&amp;\',\'&lt;\',\'&gt;\'],' . $match[1] . '); ?>';
+        }, $content);
+    }
+
+    /**
+     * 处理block
+     *
+     * @param string $content            
+     * @return void
+     */
+    private function processBlocks(string &$content): void
+    {
+        $pattern = $this->getTagPattern('block\s+([_a-zA-Z][_a-zA-Z0-9]*)\}\s*(.+?)\s*' . preg_quote('{/block', '/'));
+        $blockCodes = [];
+        $content = preg_replace_callback($pattern, function ($match) use (&$blockCodes) {
+            $blockCodes[$match[1]] = $match[2];
+            return '';
+        }, $content);
+        $displayPattern = $this->getTagPattern('display_block\s+([_a-zA-Z][_a-zA-Z0-9]*)');
+        $content = preg_replace_callback($displayPattern, function ($match) use ($blockCodes) {
+            if (isset($blockCodes[$match[1]])) {
+                return $blockCodes[$match[1]];
+            }
+            return '';
         }, $content);
     }
 
