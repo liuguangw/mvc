@@ -106,7 +106,7 @@ class ViewResult extends ActionResult
             Application::$app->dispatchEvent(ApplicationErrorEvent::createCustom(500, '读取模板文件' . $this->tplSrcPath . '失败'));
             return '<!--error-->';
         }
-        //除去<!--和-->
+        // 除去<!--和-->
         $content = preg_replace('/\<\!\-\-(\{(.+?)\})\-\-\>/', '\1', $content);
         if ($this->layoutPath !== null) {
             $this->processLayout($content);
@@ -126,7 +126,11 @@ class ViewResult extends ActionResult
         // /{text $a}
         // /
         $this->processTextVars($content);
-        
+        // / 处理不转换的标签
+        // /
+        // /{!}{$val}
+        // /
+        $this->processNoConvert($content);
         return $content;
     }
 
@@ -177,7 +181,8 @@ class ViewResult extends ActionResult
      */
     private function getTagPattern(string $pattern): string
     {
-        return '/' . preg_quote($this->startTag) . $pattern . preg_quote($this->endTag) . '/s';
+        // {...}标签左侧为{!}时不执行转换
+        return '/(?<!{!})' . preg_quote($this->startTag) . $pattern . preg_quote($this->endTag) . '/s';
     }
 
     /**
@@ -223,7 +228,7 @@ class ViewResult extends ActionResult
      */
     private function processVars(string &$content): void
     {
-        $pattern=$this->getTagPattern('(\$.+?)');
+        $pattern = $this->getTagPattern('(\$.+?)');
         $content = preg_replace_callback($pattern, function ($match) {
             return '<?php echo ' . $match[1] . '; ?>';
         }, $content);
@@ -238,10 +243,22 @@ class ViewResult extends ActionResult
      */
     private function processTextVars(string &$content): void
     {
-        $pattern=$this->getTagPattern('text\s+(\$.+?)');
+        $pattern = $this->getTagPattern('text\s+(\$.+?)');
         $content = preg_replace_callback($pattern, function ($match) {
             return '<?php echo str_replace([\'&\',\'<\',\'>\'],[\'&amp;\',\'&lt;\',\'&gt;\'],' . $match[1] . '); ?>';
         }, $content);
+    }
+
+    /**
+     * 处理不转换标识
+     *
+     * @param string $content            
+     * @return void
+     */
+    private function processNoConvert(string &$content): void
+    {
+        $pattern = '/{!}(' . preg_quote($this->startTag) . '.+?' . preg_quote($this->endTag) . ')/s';
+        $content = preg_replace($pattern, '\1', $content);
     }
 
     /**
