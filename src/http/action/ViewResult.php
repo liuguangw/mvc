@@ -19,28 +19,28 @@ class ViewResult extends ActionResult
      *
      * @var string
      */
-    private $tplSrcPath;
+    protected $tplSrcPath;
 
     /**
      * 模板目标文件路径
      *
      * @var string
      */
-    private $tplDistPath;
+    protected $tplDistPath;
 
     /**
      * 布局文件路径
      *
      * @var string
      */
-    private $layoutPath;
+    protected $layoutPath;
 
     /**
      * 是否禁用模板缓存
      *
      * @var bool
      */
-    private $disableTplCache;
+    protected $disableTplCache;
 
     /**
      * 模板变量
@@ -54,14 +54,14 @@ class ViewResult extends ActionResult
      *
      * @var string
      */
-    private $startTag = '{';
+    protected $startTag = '{';
 
     /**
      * 结束标签
      *
      * @var string
      */
-    private $endTag = '}';
+    protected $endTag = '}';
 
     /**
      */
@@ -110,8 +110,6 @@ class ViewResult extends ActionResult
         if ($this->layoutPath !== null) {
             $this->processLayout($content);
         }
-        // 除去<!--和-->
-        $content = preg_replace('/\<\!\-\-(\{(.+?)\})\-\-\>/', '\1', $content);
         return $content;
     }
 
@@ -120,7 +118,7 @@ class ViewResult extends ActionResult
      *
      * @return string
      */
-    private function getMergedContent(): string
+    protected function getMergedContent(): string
     {
         $content = $this->getTemplateSource();
         // 处理include合并
@@ -128,6 +126,15 @@ class ViewResult extends ActionResult
         // /{include mobile/header}
         // /
         $this->processIncludeTag($content);
+        // 处理动态包含
+        // /
+        // /{template mobile/header}
+        // /
+        $this->processDynamicTag($content);
+        // 处理扩展
+        if ($this->hasExtendRule()) {
+            $this->extendTemplate($content);
+        }
         // 处理变量输出
         // /
         // /{$a}
@@ -138,6 +145,11 @@ class ViewResult extends ActionResult
         // /{text $a}
         // /
         $this->processTextVars($content);
+        // 处理php标签
+        // /
+        // /{php}echo hello world;{/php}
+        // /
+        $this->processPhpTag($content);
         // 处理block
         $this->processBlocks($content);
         // 处理不转换的标签
@@ -149,11 +161,31 @@ class ViewResult extends ActionResult
     }
 
     /**
+     * 用于判断是否有附加的模板语法(用于子类添加额外的模板标签)
+     *
+     * @return bool
+     */
+    protected function hasExtendRule(): bool
+    {
+        return false;
+    }
+
+    /**
+     * 模板附加标签语法
+     *
+     * @param string $tplContent
+     *            模板内容
+     * @return void
+     */
+    protected function extendTemplate(string &$tplContent)
+    {}
+
+    /**
      * 构建视图模板
      *
      * @return void
      */
-    private function buildViewTemplate(): void
+    protected function buildViewTemplate(): void
     {
         $distDir = dirname($this->tplDistPath);
         // 创建文件夹
@@ -193,7 +225,7 @@ class ViewResult extends ActionResult
      *            中间标签
      * @return string
      */
-    private function getTagPattern(string $pattern): string
+    protected function getTagPattern(string $pattern): string
     {
         // {...}标签左侧为{!}时不执行转换
         return '/(?<!{!})' . preg_quote($this->startTag) . $pattern . preg_quote($this->endTag) . '/s';
@@ -206,7 +238,7 @@ class ViewResult extends ActionResult
      *            模板内容
      * @return void
      */
-    private function processLayout(string &$content): void
+    protected function processLayout(string &$content): void
     {
         $layoutContent = @file_get_contents($this->layoutPath);
         if ($layoutContent === false) {
@@ -222,7 +254,7 @@ class ViewResult extends ActionResult
      *            原模板内容
      * @return void
      */
-    private function processIncludeTag(string &$content): void
+    protected function processIncludeTag(string &$content): void
     {
         $pattern = $this->getTagPattern('include\s+(.+?)');
         while (preg_match($pattern, $content) != 0) {
@@ -233,6 +265,15 @@ class ViewResult extends ActionResult
         }
     }
 
+    protected function processDynamicTag(string &$content)
+    {
+        $pattern = $this->getTagPattern('template\s+(.+?)');
+        $content = preg_replace_callback($pattern, function ($match) {
+            $viewResult = new ViewResult($match[1]);
+            return '<?php include \\' . get_class($this) . '::dynamicView(\'' . $match[1] . '\'); ?>';
+        }, $content);
+    }
+
     /**
      * 处理变量输出
      *
@@ -240,7 +281,7 @@ class ViewResult extends ActionResult
      *            原模板内容
      * @return void
      */
-    private function processVars(string &$content): void
+    protected function processVars(string &$content): void
     {
         $pattern = $this->getTagPattern('(\$.+?)');
         $content = preg_replace_callback($pattern, function ($match) {
@@ -255,11 +296,26 @@ class ViewResult extends ActionResult
      *            原模板内容
      * @return void
      */
-    private function processTextVars(string &$content): void
+    protected function processTextVars(string &$content): void
     {
         $pattern = $this->getTagPattern('text\s+(\$.+?)');
         $content = preg_replace_callback($pattern, function ($match) {
             return '<?php echo str_replace([\'&\',\'<\',\'>\'],[\'&amp;\',\'&lt;\',\'&gt;\'],' . $match[1] . '); ?>';
+        }, $content);
+    }
+
+    /**
+     * 处理php标签
+     *
+     * @param string $content
+     *            原模板内容
+     * @return void
+     */
+    protected function processPhpTag(string &$content): void
+    {
+        $pattern = $this->getTagPattern('php' . preg_quote($this->endTag, '/') . '(.+?)' . preg_quote($this->startTag . '/php', '/'));
+        $content = preg_replace_callback($pattern, function ($match) {
+            return '<?php ' . $match[1] . ' ?>';
         }, $content);
     }
 
@@ -269,9 +325,9 @@ class ViewResult extends ActionResult
      * @param string $content            
      * @return void
      */
-    private function processBlocks(string &$content): void
+    protected function processBlocks(string &$content): void
     {
-        $pattern = $this->getTagPattern('block\s+([_a-zA-Z][_a-zA-Z0-9]*)\}\s*(.+?)\s*' . preg_quote('{/block', '/'));
+        $pattern = $this->getTagPattern('block\s+([_a-zA-Z][_a-zA-Z0-9]*)' . preg_quote($this->endTag, '/') . '\s*(.+?)\s*' . preg_quote($this->startTag . '/block', '/'));
         $blockCodes = [];
         $content = preg_replace_callback($pattern, function ($match) use (&$blockCodes) {
             $blockCodes[$match[1]] = $match[2];
@@ -292,7 +348,7 @@ class ViewResult extends ActionResult
      * @param string $content            
      * @return void
      */
-    private function processNoConvert(string &$content): void
+    protected function processNoConvert(string &$content): void
     {
         $pattern = '/{!}(' . preg_quote($this->startTag) . '.+?' . preg_quote($this->endTag) . ')/s';
         $content = preg_replace($pattern, '\1', $content);
