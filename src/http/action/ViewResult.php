@@ -64,6 +64,13 @@ class ViewResult extends ActionResult
     protected $endTag = '}';
 
     /**
+     * url工具
+     *
+     * @var \liuguang\mvc\http\UrlAsset
+     */
+    public static $urlAsset = null;
+
+    /**
      */
     public function __construct(string $viewName, ?string $layout = null, ?DataMap $params = null)
     {
@@ -145,6 +152,11 @@ class ViewResult extends ActionResult
         // /{text $a}
         // /
         $this->processTextVars($content);
+        // /处理url标签
+        // /
+        // /{url image}path/to/image.png{/url}
+        // /
+        $this->processUrlTag($content);
         // 处理php标签
         // /
         // /{php}echo hello world;{/php}
@@ -301,6 +313,32 @@ class ViewResult extends ActionResult
         $pattern = $this->getTagPattern('text\s+(\$.+?)');
         $content = preg_replace_callback($pattern, function ($match) {
             return '<?php echo str_replace([\'&\',\'<\',\'>\'],[\'&amp;\',\'&lt;\',\'&gt;\'],' . $match[1] . '); ?>';
+        }, $content);
+    }
+
+    /**
+     * 处理静态资源
+     *
+     * @param string $content
+     *            原模板内容
+     * @return void
+     */
+    protected function processUrlTag(string &$content): void
+    {
+        if (static::$urlAsset === null) {
+            $urlAssetClassname = Application::$app->config->getValue('URL_ASSET');
+            static::$urlAsset = new $urlAssetClassname();
+        }
+        $urlAsset = static::$urlAsset;
+        $pattern = $this->getTagPattern('url(\s+(.+?))?' . preg_quote($this->endTag, '/') . '(.+?)' . preg_quote($this->startTag . '/url', '/'));
+        $content = preg_replace_callback($pattern, function ($match) use ($urlAsset) {
+            $matchName = $match[2];
+            $matchPath = $match[3];
+            if ($matchName == '') {
+                return $urlAsset->getUrl($matchPath);
+            } else {
+                return $urlAsset->getUrl($matchPath, $matchName);
+            }
         }, $content);
     }
 
