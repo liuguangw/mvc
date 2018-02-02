@@ -75,13 +75,14 @@ class ViewResult extends ActionResult
     public function __construct(string $viewName, ?string $layout = null, ?DataMap $params = null)
     {
         $app = Application::$app;
-        $viewBasePath = MODULE_PATH . '/./' . str_replace('.', '/', $app->routeInfo->moduleName) . '/view';
-        $this->tplSrcPath = $viewBasePath . '/src/' . $viewName . '.tpl';
-        $this->tplDistPath = $viewBasePath . '/dist/' . $viewName . '.php';
+        $modulePathName='modules/'.str_replace('.', '/', $app->routeInfo->moduleName);
+        $viewBasePath = $app->config->getValue('VIEW_PATH') ;
+        $this->tplSrcPath = $viewBasePath .'/./'. $modulePathName.'/src/' . $viewName . '.tpl';
+        $this->tplDistPath = $viewBasePath .'/./dist/'. $modulePathName.'/' . $viewName . '.php';
         if ($layout === null) {
             $this->layoutPath = null;
         } else {
-            $this->layoutPath = $viewBasePath . '/layout/' . $layout . '.tpl';
+            $this->layoutPath = $viewBasePath .'/./'. $modulePathName.'/layout/' . $layout . '.tpl';
         }
         $this->disableTplCache = $app->config->getValue('DISABLE_TPL_CACHE');
         if ($params === null) {

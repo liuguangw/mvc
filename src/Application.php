@@ -66,14 +66,11 @@ class Application
     public function __construct()
     {
         $this->mvcSourcePath = __DIR__;
-        if (! defined('APP_PATH')) {
-            exit('APP_PATH is not defined !');
+        if (! defined('PUBLIC_PATH')) {
+            exit('PUBLIC_PATH is not defined !');
         }
         if (! defined('APP_CONFIG_PATH')) {
-            define('APP_CONFIG_PATH', APP_PATH . '/../config');
-        }
-        if (! defined('MODULE_PATH')) {
-            define('MODULE_PATH', APP_PATH . '/../module');
+            define('APP_CONFIG_PATH', PUBLIC_PATH . '/../src/config');
         }
         $context = '';
         $pos = strrpos($_SERVER['SCRIPT_NAME'], '/');
@@ -180,7 +177,7 @@ class Application
         $moduleName = $this->routeInfo->moduleName;
         $controllerName = $this->routeInfo->controllerName;
         $actionName = $this->routeInfo->actionName;
-        $controllerClass = $this->config->getValue('APP_NAMESPACE') . '\\module\\' . str_replace('.', '\\', $moduleName) . '\\controllers\\' . $controllerName;
+        $controllerClass = $this->config->getValue('CONTROLLER_NAMESPACE') . '\\' . str_replace('.', '\\', $moduleName) . '\\' . $controllerName;
         if (! class_exists($controllerClass)) {
             $event = RouteErrorEvent::createCustom(404, $moduleName . '/' . $controllerName . '/' . $actionName . '对应的控制器类' . $controllerClass . '不存在');
             $event->httpErrorCode = 404;
