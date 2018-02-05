@@ -1,11 +1,13 @@
 <?php
-namespace liuguang\mvc;
+namespace liuguang\mvc\services;
 
 use liuguang\mvc\event\common\ApplicationErrorEvent;
 use liuguang\mvc\http\action\ContentResult;
 use liuguang\mvc\event\common\RouteErrorEvent;
+use liuguang\mvc\services\IErrorHandler;
+use liuguang\mvc\Application;
 
-class ErrorHandler
+class ErrorHandler implements IErrorHandler
 {
 
     private $templateContent = null;
@@ -14,7 +16,7 @@ class ErrorHandler
      *
      * @param ApplicationErrorEvent $evt            
      */
-    public function handleError(ApplicationErrorEvent $evt)
+    public function handleError(ApplicationErrorEvent $evt): void
     {
         $httpCode = 500;
         if ($evt instanceof RouteErrorEvent) {

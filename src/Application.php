@@ -5,11 +5,12 @@ use liuguang\mvc\data\DataMap;
 use liuguang\mvc\event\EventDispatcher;
 use liuguang\mvc\event\common\ApplicationErrorEvent;
 use liuguang\mvc\http\UrlHelper;
-use liuguang\mvc\http\RouteInfo;
 use liuguang\mvc\event\common\RouteErrorEvent;
 use liuguang\mvc\http\Controller;
 use liuguang\mvc\http\action\ActionResult;
-use liuguang\mvc\http\RouteHandler;
+use liuguang\mvc\services\IErrorHandler;
+use liuguang\mvc\services\IRouteErrorHandler;
+use liuguang\mvc\services\RouteHandler;
 
 /**
  * 应用主类
@@ -63,6 +64,13 @@ class Application
      */
     public $routeInfo;
 
+    /**
+     * Ioc容器
+     *
+     * @var Container
+     */
+    public $container;
+
     public function __construct()
     {
         $this->mvcSourcePath = __DIR__;
@@ -104,21 +112,37 @@ class Application
             $config->mergeData($this->config);
         }
         $this->config = $config;
-        $this->loadErrorHandler();
-        $this->loadRouteErrorHandler();
-        $this->loadRouteHandler();
+        $this->loadContainer();
         $this->invokeRoute();
+    }
+
+    /**
+     * 加载容器
+     *
+     * @return void
+     */
+    private function loadContainer(): void
+    {
+        $loaderClass = $this->config->getValue('SERVICE_LOADER');
+        $this->container = new Container();
+        $serviceLoader = new $loaderClass();
+        $serviceLoader->loadContainerService($this->container);
+        // 错误处理器
+        $this->loadErrorHandler($this->container->getInstance(IErrorHandler::class));
+        $this->loadRouteErrorHandler($this->container->getInstance(IRouteErrorHandler::class));
+        // 路由服务
+        $this->loadRouteHandler($this->container->getInstance(RouteHandler::class));
     }
 
     /**
      * 加载错误处理器
      *
+     * @param IErrorHandler $errorHandler
+     *            错误处理器
      * @return void
      */
-    private function loadErrorHandler(): void
+    private function loadErrorHandler(IErrorHandler $errorHandler): void
     {
-        $errorHandlerClass = $this->config->getValue('ERROR_HANDLER');
-        $errorHandler = new $errorHandlerClass();
         // 添加错误事件处理
         $this->addEventListener(ApplicationErrorEvent::class, [
             $errorHandler,
@@ -134,14 +158,27 @@ class Application
     }
 
     /**
+     * 加载路由错误处理接口
+     *
+     * @param IRouteErrorHandler $errorHandler            
+     * @return void
+     */
+    private function loadRouteErrorHandler(IRouteErrorHandler $errorHandler): void
+    {
+        // 添加路由错误事件处理
+        $this->addEventListener(RouteErrorEvent::class, [
+            $errorHandler,
+            'handleError'
+        ]);
+    }
+
+    /**
      * 加载路由
      *
      * @return void
      */
-    private function loadRouteHandler(): void
+    private function loadRouteHandler(RouteHandler $routeHandler): void
     {
-        $routeHandlerClass = $this->config->getValue('ROUTE_HANDLER');
-        $routeHandler = new $routeHandlerClass();
         // 解析URL
         $url = '/';
         if (isset($_SERVER['REQUEST_URI'])) {
@@ -149,22 +186,6 @@ class Application
         }
         $this->routeInfo = $routeHandler->getRouteInfo($url);
         $this->url = new UrlHelper($routeHandler, $this->appContext);
-    }
-
-    /**
-     * 加载路由错误处理接口
-     *
-     * @return void
-     */
-    private function loadRouteErrorHandler(): void
-    {
-        $errorHandlerClass = $this->config->getValue('ROUTE_ERROR_HANDLER');
-        $errorHandler = new $errorHandlerClass();
-        // 添加错误事件处理
-        $this->addEventListener(RouteErrorEvent::class, [
-            $errorHandler,
-            'handleError'
-        ]);
     }
 
     /**
@@ -202,6 +223,13 @@ class Application
             $actionMethodPrefix = $this->config->getValue('ACTION_METHOD_PREFIX');
             if (! empty($actionMethodPrefix)) {
                 $actionMethodName = $actionMethodPrefix . ucfirst($actionMethodName);
+            }
+            $methods = get_class_methods($controller);
+            if (! in_array($actionMethodName, $methods)) {
+                $event = RouteErrorEvent::createCustom(404, $moduleName . '/' . $controllerName . '/' . $actionName . '对应的操作方法' . $actionMethodName . '不存在');
+                $event->httpErrorCode = 404;
+                $this->dispatchEvent($event);
+                return;
             }
             $actionResult = call_user_func([
                 $controller,

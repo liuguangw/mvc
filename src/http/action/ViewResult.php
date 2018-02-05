@@ -4,6 +4,7 @@ namespace liuguang\mvc\http\action;
 use liuguang\mvc\data\DataMap;
 use liuguang\mvc\Application;
 use liuguang\mvc\event\common\ApplicationErrorEvent;
+use liuguang\mvc\services\UrlAsset;
 
 /**
  * 视图响应
@@ -75,14 +76,14 @@ class ViewResult extends ActionResult
     public function __construct(string $viewName, ?string $layout = null, ?DataMap $params = null)
     {
         $app = Application::$app;
-        $modulePathName='modules/'.str_replace('.', '/', $app->routeInfo->moduleName);
-        $viewBasePath = $app->config->getValue('VIEW_PATH') ;
-        $this->tplSrcPath = $viewBasePath .'/./'. $modulePathName.'/src/' . $viewName . '.tpl';
-        $this->tplDistPath = $viewBasePath .'/./dist/'. $modulePathName.'/' . $viewName . '.php';
+        $modulePathName = 'modules/' . str_replace('.', '/', $app->routeInfo->moduleName);
+        $viewBasePath = $app->config->getValue('VIEW_PATH');
+        $this->tplSrcPath = $viewBasePath . '/./' . $modulePathName . '/src/' . $viewName . '.tpl';
+        $this->tplDistPath = $viewBasePath . '/./dist/' . $modulePathName . '/' . $viewName . '.php';
         if ($layout === null) {
             $this->layoutPath = null;
         } else {
-            $this->layoutPath = $viewBasePath .'/./'. $modulePathName.'/layout/' . $layout . '.tpl';
+            $this->layoutPath = $viewBasePath . '/./' . $modulePathName . '/layout/' . $layout . '.tpl';
         }
         $this->disableTplCache = $app->config->getValue('DISABLE_TPL_CACHE');
         if ($params === null) {
@@ -327,8 +328,7 @@ class ViewResult extends ActionResult
     protected function processUrlTag(string &$content): void
     {
         if (static::$urlAsset === null) {
-            $urlAssetClassname = Application::$app->config->getValue('URL_ASSET');
-            static::$urlAsset = new $urlAssetClassname();
+            static::$urlAsset = Application::$app->container->getInstance(UrlAsset::class);
         }
         $urlAsset = static::$urlAsset;
         $pattern = $this->getTagPattern('url(\s+(.+?))?' . preg_quote($this->endTag, '/') . '(.+?)' . preg_quote($this->startTag . '/url', '/'));

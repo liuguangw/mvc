@@ -3,10 +3,15 @@ namespace liuguang\mvc\http;
 
 use liuguang\mvc\data\DataMap;
 use liuguang\mvc\Application;
+use liuguang\mvc\services\RouteHandler;
 
 class UrlHelper
 {
 
+    /**
+     * 
+     * @var RouteHandler
+     */
     private $routeHandler;
 
     private $context;

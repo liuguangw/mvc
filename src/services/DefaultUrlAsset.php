@@ -1,5 +1,5 @@
 <?php
-namespace liuguang\mvc\http;
+namespace liuguang\mvc\services;
 
 use liuguang\mvc\Application;
 use Symfony\Component\Asset\Package;
@@ -25,7 +25,7 @@ class DefaultUrlAsset extends UrlAsset
      *
      * {@inheritdoc}
      *
-     * @see \liuguang\mvc\http\UrlAsset::getDefaultPackage()
+     * @see \liuguang\mvc\services\UrlAsset::getDefaultPackage()
      */
     public function getDefaultPackage(): Package
     {
@@ -36,7 +36,7 @@ class DefaultUrlAsset extends UrlAsset
      *
      * {@inheritdoc}
      *
-     * @see \liuguang\mvc\http\UrlAsset::getNamedPackages()
+     * @see \liuguang\mvc\services\UrlAsset::getNamedPackages()
      */
     public function getNamedPackages(): array
     {

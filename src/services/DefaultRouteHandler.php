@@ -1,9 +1,10 @@
 <?php
-namespace liuguang\mvc\http;
+namespace liuguang\mvc\services;
 
 use liuguang\mvc\data\DataMap;
 use liuguang\mvc\Application;
 use liuguang\mvc\event\common\RouteErrorEvent;
+use liuguang\mvc\http\RouteInfo;
 
 /**
  * 默认的路由
@@ -25,7 +26,7 @@ class DefaultRouteHandler extends RouteHandler
      *
      * {@inheritdoc}
      *
-     * @see \liuguang\mvc\http\RouteHandler::getRouteInfo()
+     * @see \liuguang\mvc\services\RouteHandler::getRouteInfo()
      */
     public function getRouteInfo(string $url): RouteInfo
     {
@@ -60,7 +61,7 @@ class DefaultRouteHandler extends RouteHandler
      *
      * {@inheritdoc}
      *
-     * @see \liuguang\mvc\http\RouteHandler::createUrl()
+     * @see \liuguang\mvc\services\RouteHandler::createUrl()
      */
     public function createUrl(string $moduleName, string $controllerName, string $actionName, ?DataMap $params = null): string
     {

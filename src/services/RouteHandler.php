@@ -1,9 +1,10 @@
 <?php
-namespace liuguang\mvc\http;
+namespace liuguang\mvc\services;
 
 use liuguang\mvc\data\DataMap;
 use liuguang\mvc\Application;
 use liuguang\mvc\event\common\ApplicationErrorEvent;
+use liuguang\mvc\http\RouteInfo;
 
 /**
  * 路由抽象类

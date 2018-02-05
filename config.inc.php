@@ -1,9 +1,6 @@
 <?php
 return [
-    'ERROR_HANDLER' => 'liuguang\mvc\ErrorHandler',
-    'ROUTE_HANDLER' => 'liuguang\mvc\http\DefaultRouteHandler',
-    'ROUTE_ERROR_HANDLER' => 'liuguang\mvc\ErrorHandler',
-    'URL_ASSET' => 'liuguang\mvc\http\DefaultUrlAsset',
+    'SERVICE_LOADER' => 'liuguang\mvc\ServiceLoader',
     'STATIC_URL_VERSION' => 'V1',
     'CONTROLLER_NAMESPACE' => 'app\controllers',
     'ACTION_METHOD_PREFIX' => 'action',

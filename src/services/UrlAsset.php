@@ -1,5 +1,5 @@
 <?php
-namespace liuguang\mvc\http;
+namespace liuguang\mvc\services;
 
 use Symfony\Component\Asset\Package;
 use Symfony\Component\Asset\Packages;
