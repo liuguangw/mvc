@@ -328,7 +328,7 @@ class ViewResult extends ActionResult
     protected function processUrlTag(string &$content): void
     {
         if (static::$urlAsset === null) {
-            static::$urlAsset = Application::$app->container->getInstance(UrlAsset::class);
+            static::$urlAsset = Application::$app->container->make('@urlAsset');
         }
         $urlAsset = static::$urlAsset;
         $pattern = $this->getTagPattern('url(\s+(.+?))?' . preg_quote($this->endTag, '/') . '(.+?)' . preg_quote($this->startTag . '/url', '/'));

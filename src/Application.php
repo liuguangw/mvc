@@ -89,11 +89,11 @@ class Application
     }
 
     /**
-     * 启动应用
+     * 启动基本组件
      *
      * @return void
      */
-    public function startApp(): void
+    private function startCommon(): void
     {
         if (self::$app !== null) {
             return;
@@ -113,7 +113,27 @@ class Application
         }
         $this->config = $config;
         $this->loadContainer();
+    }
+
+    /**
+     * 启动应用
+     *
+     * @return void
+     */
+    public function startApp(): void
+    {
+        $this->startCommon();
         $this->invokeRoute();
+    }
+
+    /**
+     * 测试入口
+     *
+     * @return void
+     */
+    public function startTest(): void
+    {
+        $this->startCommon();
     }
 
     /**
@@ -128,10 +148,10 @@ class Application
         $serviceLoader = new $loaderClass();
         $serviceLoader->loadContainerService($this->container);
         // 错误处理器
-        $this->loadErrorHandler($this->container->getInstance(IErrorHandler::class));
-        $this->loadRouteErrorHandler($this->container->getInstance(IRouteErrorHandler::class));
+        $this->loadErrorHandler($this->container->make('@errorHandler'));
+        $this->loadRouteErrorHandler($this->container->make('@routeErrorHandler'));
         // 路由服务
-        $this->loadRouteHandler($this->container->getInstance(RouteHandler::class));
+        $this->loadRouteHandler($this->container->make('@routeHandler'));
     }
 
     /**

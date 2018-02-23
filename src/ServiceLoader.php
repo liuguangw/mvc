@@ -28,12 +28,12 @@ class ServiceLoader
     public function loadContainerService(Container $container): void
     {
         // 添加错误处理服务
-        $container->addClassMap(IErrorHandler::class,ErrorHandler::class);
+        $container->addClassMap(IErrorHandler::class, ErrorHandler::class, '@errorHandler');
         // 路由错误处理
-        $container->addClassMap(IRouteErrorHandler::class,RouteErrorHandler::class);
+        $container->addClassMap(IRouteErrorHandler::class, RouteErrorHandler::class, '@routeErrorHandler');
         // 路由服务
-        $container->addClassMap(RouteHandler::class, DefaultRouteHandler::class);
+        $container->addClassMap(RouteHandler::class, DefaultRouteHandler::class, '@routeHandler');
         // 模板中静态url处理
-        $container->addClassMap(UrlAsset::class, DefaultUrlAsset::class);
+        $container->addClassMap(UrlAsset::class, DefaultUrlAsset::class, '@urlAsset');
     }
 }
