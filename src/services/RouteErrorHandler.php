@@ -15,8 +15,13 @@ class RouteErrorHandler implements IRouteErrorHandler
      */
     public function handleError(RouteErrorEvent $evt): void
     {
-        $errorHandler = Application::$app->container->getInstance(IErrorHandler::class);
+        $errorHandler = $this->getErrorHandler();
         $errorHandler->handleError($evt);
+    }
+
+    private function getErrorHandler(): IErrorHandler
+    {
+        return Application::$app->container->make('@errorHandler');
     }
 }
 

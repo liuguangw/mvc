@@ -32,6 +32,20 @@ class Container
     private $shortNameMap = [];
 
     /**
+     * 类标识符
+     *
+     * @param string $classname
+     *            类、接口名称
+     * @param int $instanceId
+     *            实现类别id
+     * @return void
+     */
+    private function getFuncKey(string $classname, int $instanceId): string
+    {
+        return $classname . '#' . $instanceId;
+    }
+
+    /**
      * 添加[类名:回调]关系映射
      *
      * @param string $classname
@@ -46,12 +60,10 @@ class Container
      */
     public function addCallableMap(string $classname, callable $func, string $shortName = '', int $instanceId = 0): void
     {
-        if (! isset($this->classMap[$classname])) {
-            $this->classMap[$classname] = [];
-        }
-        $this->classMap[$classname][$instanceId] = $func;
+        $funcKey = $this->getFuncKey($classname, $instanceId);
+        $this->classMap[$funcKey] = $func;
         if ($shortName != '') {
-            $this->shortNameMap[$shortName] = $classname;
+            $this->shortNameMap[$shortName] = $funcKey;
         }
     }
 
@@ -111,53 +123,38 @@ class Container
      */
     public function make(string $name, bool $isSingleton = true, int $instanceId = 0)
     {
-        $classname=$this->getFullClassname($name);
-        if(!$isSingleton){
-            return $this->getNewInstance($classname,$instanceId);
+        // 获取标识
+        if (isset($this->shortNameMap[$name])) {
+            $funcKey = $this->shortNameMap[$name];
+        } else {
+            $funcKey = $this->getFuncKey($name, $instanceId);
         }
-        //单例模式
-        if (! isset($this->objectMap[$classname][$instanceId])) {
-            $objectInstance = $this->getNewInstance($classname,$instanceId);
-            $this->objectMap[$classname][$instanceId] = $objectInstance;
+        // 非单例模式
+        if (! $isSingleton) {
+            return $this->getNewInstance($funcKey);
         }
-        return $this->objectMap[$classname][$instanceId];
-    }
-    
-    /**
-     * 获取完整类名
-     * 
-     * @param string $name 类、接口名称、简要标识
-     * @return string
-     * @throws \Exception
-     */
-    private function getFullClassname(string $name):string{
-        if (isset($this->classMap[$name])) {
-            $classname = $name;
-        } elseif (isset($this->shortNameMap[$name])) {
-            $classname = $this->shortNameMap[$name];
-        }else{
-            throw new \UnexpectedValueException('找不到' . $name . '的实例规则');
+        // 单例模式
+        if (! isset($this->objectMap[$funcKey])) {
+            $objectInstance = $this->getNewInstance($funcKey);
+            $this->objectMap[$funcKey] = $objectInstance;
         }
-        return $classname;
+        return $this->objectMap[$funcKey];
     }
 
     /**
      * 获取新实例
      *
-     * @param string $classname
-     *            类、接口名称、简要标识
-     * @param int $instanceId
-     *            实现类别id
+     * @param string $funcKey
+     *            标识
      * @return object
      * @throws \Exception
      */
-    private function getNewInstance(string $classname, int $instanceId = 0)
+    private function getNewInstance(string $funcKey)
     {
-        if (! isset($this->classMap[$classname][$instanceId])) {
-            throw new \UnexpectedValueException('找不到类' . $classname . '#'.$instanceId.'的实例规则');
+        if (! isset($this->classMap[$funcKey])) {
+            throw new \UnexpectedValueException('找不到类' . $funcKey . '的实例规则');
         }
-        $func = $this->classMap[$classname][$instanceId];
-        return call_user_func($func, $this);
+        return call_user_func($this->classMap[$funcKey], $this);
     }
 }
 

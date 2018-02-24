@@ -225,38 +225,60 @@ class Application
             $this->dispatchEvent($event);
             return;
         }
-        $this->invokeController(new $controllerClass());
+        // 执行操作
+        $this->invokeAction(new $controllerClass(), $actionName);
     }
 
-    private function invokeController(Controller $controller): void
+    /**
+     * 执行操作
+     *
+     * @param Controller $controller            
+     * @param string $actionName            
+     */
+    private function invokeAction(Controller $controller, string $actionName): void
     {
-        $moduleName = $this->routeInfo->moduleName;
-        $controllerName = $this->routeInfo->controllerName;
-        $actionName = $this->routeInfo->actionName;
-        $controller->beforeAction($actionName);
-        if (($moduleName != $this->routeInfo->moduleName) || ($controllerName != $this->routeInfo->controllerName)) {
-            // 模块名或者控制器名变化
-            $this->invokeRoute();
-        } else {
-            // 获取操作结果
-            $actionMethodName = $this->routeInfo->actionName;
-            $actionMethodPrefix = $this->config->getValue('ACTION_METHOD_PREFIX');
-            if (! empty($actionMethodPrefix)) {
-                $actionMethodName = $actionMethodPrefix . ucfirst($actionMethodName);
-            }
-            $methods = get_class_methods($controller);
-            if (! in_array($actionMethodName, $methods)) {
-                $event = RouteErrorEvent::createCustom(404, $moduleName . '/' . $controllerName . '/' . $actionName . '对应的操作方法' . $actionMethodName . '不存在');
-                $event->httpErrorCode = 404;
-                $this->dispatchEvent($event);
-                return;
-            }
-            $actionResult = call_user_func([
-                $controller,
-                $actionMethodName
-            ]);
-            $this->invokeActionResult($actionResult);
+        // 获取操作结果
+        $actionMethodName = $actionName;
+        $actionMethodPrefix = $this->config->getValue('ACTION_METHOD_PREFIX');
+        if (! empty($actionMethodPrefix)) {
+            $actionMethodName = $actionMethodPrefix . ucfirst($actionMethodName);
         }
+        $methods = get_class_methods($controller);
+        $actionExists = in_array($actionMethodName, $methods);
+        $actionResult = $controller->invokeAction($actionName, $actionMethodName, $actionExists);
+        $this->invokeActionResult($actionResult);
+    }
+    
+    /**
+     * 调用操作
+     *
+     * @param string $action
+     *            缺省操作
+     * @param DataMap $params
+     *            路由参数(当为空时,使用当前的路由参数)
+     * @return void
+     */
+    public function callAction(string $action, ?DataMap $params = null): void
+    {
+        list ($moduleName, $controllerName, $actionName) = $this->getFullAction($action);
+        $this->routeInfo->moduleName = $moduleName;
+        $this->routeInfo->controllerName = $controllerName;
+        $this->routeInfo->actionName = $actionName;
+        if ($params != null) {
+            $this->routeInfo->params = $params;
+        }
+        $this->invokeRoute();
+    }
+
+    /**
+     * 执行响应结果
+     *
+     * @param ActionResult $actionResult            
+     * @return void
+     */
+    private function invokeActionResult(ActionResult $actionResult): void
+    {
+        $actionResult->executeResult();
     }
 
     /**
@@ -288,38 +310,6 @@ class Application
             $controllerName,
             $actionName
         ];
-    }
-
-    /**
-     * 调用控制器
-     *
-     * @param string $action
-     *            缺省操作
-     * @param DataMap $params
-     *            路由参数(当为空时,使用当前的路由参数)
-     * @return void
-     */
-    public function callAction(string $action, ?DataMap $params = null): void
-    {
-        list ($moduleName, $controllerName, $actionName) = $this->getFullAction($action);
-        $this->routeInfo->moduleName = $moduleName;
-        $this->routeInfo->controllerName = $controllerName;
-        $this->routeInfo->actionName = $actionName;
-        if ($params != null) {
-            $this->routeInfo->params = $params;
-        }
-        $this->invokeRoute();
-    }
-
-    /**
-     * 执行响应结果
-     *
-     * @param ActionResult $actionResult            
-     * @return void
-     */
-    private function invokeActionResult(ActionResult $actionResult): void
-    {
-        $actionResult->executeResult();
     }
 }
 
