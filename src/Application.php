@@ -137,6 +137,18 @@ class Application
     }
 
     /**
+     * 服务对象获取
+     *
+     * @param string $serviceName
+     *            服务名称
+     * @return object
+     */
+    public function getService(string $serviceName)
+    {
+        return $this->container->make('@' . $serviceName);
+    }
+
+    /**
      * 加载容器
      *
      * @return void
@@ -148,10 +160,10 @@ class Application
         $serviceLoader = new $loaderClass();
         $serviceLoader->loadContainerService($this->container);
         // 错误处理器
-        $this->loadErrorHandler($this->container->make('@errorHandler'));
-        $this->loadRouteErrorHandler($this->container->make('@routeErrorHandler'));
+        $this->loadErrorHandler($this->getService('errorHandler'));
+        $this->loadRouteErrorHandler($this->getService('routeErrorHandler'));
         // 路由服务
-        $this->loadRouteHandler($this->container->make('@routeHandler'));
+        $this->loadRouteHandler($this->getService('routeHandler'));
     }
 
     /**
@@ -248,7 +260,7 @@ class Application
         $actionResult = $controller->invokeAction($actionName, $actionMethodName, $actionExists);
         $this->invokeActionResult($actionResult);
     }
-    
+
     /**
      * 调用操作
      *

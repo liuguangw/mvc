@@ -6,7 +6,8 @@
 	"license": "MIT",
 	"require": {
 		"php": ">=7.1",
-		"symfony/asset": "^4.0"
+		"symfony/asset": "^4.0",
+		"symfony/cache": "^4.0"
 	},
 	"keywords": [
 		"php7",

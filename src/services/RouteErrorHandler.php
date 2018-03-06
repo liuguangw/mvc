@@ -21,7 +21,7 @@ class RouteErrorHandler implements IRouteErrorHandler
 
     private function getErrorHandler(): IErrorHandler
     {
-        return Application::$app->container->make('@errorHandler');
+        return Application::$app->getService('errorHandler');
     }
 }
 

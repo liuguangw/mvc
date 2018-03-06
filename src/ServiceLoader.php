@@ -9,6 +9,8 @@ use liuguang\mvc\services\RouteHandler;
 use liuguang\mvc\services\DefaultRouteHandler;
 use liuguang\mvc\services\UrlAsset;
 use liuguang\mvc\services\DefaultUrlAsset;
+use Psr\SimpleCache\CacheInterface;
+use Symfony\Component\Cache\Simple\FilesystemCache;
 
 /**
  * 容器服务加载
@@ -35,5 +37,10 @@ class ServiceLoader
         $container->addClassMap(RouteHandler::class, DefaultRouteHandler::class, '@routeHandler');
         // 模板中静态url处理
         $container->addClassMap(UrlAsset::class, DefaultUrlAsset::class, '@urlAsset');
+        // 缓存
+        $container->addCallableMap(CacheInterface::class, function () {
+            $cacheDirectory = PUBLIC_PATH . '/../src/cache';
+            return new FilesystemCache('', 30 * 60, $cacheDirectory);
+        }, '@cache');
     }
 }

@@ -477,7 +477,7 @@ class ViewResult extends ActionResult
         $content = preg_replace_callback($pattern, function ($match) {
             $matchName = $match[2];
             $matchPath = $match[3];
-            $urlAsset = Application::$app->container->make('@urlAsset');
+            $urlAsset = Application::$app->getService('urlAsset');
             if ($matchName == '') {
                 return $urlAsset->getUrl($matchPath);
             } else {

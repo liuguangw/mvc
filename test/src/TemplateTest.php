@@ -6,7 +6,6 @@ use liuguang\mvc\services\UrlAsset;
 use liuguang\mvc\Container;
 use Symfony\Component\Asset\PathPackage;
 use Symfony\Component\Asset\VersionStrategy\StaticVersionStrategy;
-use Symfony\Component\Asset\Packages;
 use Symfony\Component\Asset\Package;
 
 /**
