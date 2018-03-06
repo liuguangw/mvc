@@ -65,13 +65,6 @@ class ViewResult extends ActionResult
     protected $endTag = '}';
 
     /**
-     * url工具
-     *
-     * @var \liuguang\mvc\http\UrlAsset
-     */
-    public static $urlAsset = null;
-
-    /**
      */
     public function __construct(string $viewName, ?string $layout = null, ?DataMap $params = null)
     {
@@ -166,11 +159,54 @@ class ViewResult extends ActionResult
         $this->processPhpTag($content);
         // 处理block
         $this->processBlocks($content);
+        // 处理注释
+        // /
+        // /{info this is a comment}
+        // /
+        $this->processComment($content);
+        // 处理if标签
+        // /
+        // /{if true}
+        // /
+        $this->processIfCondition($content);
+        // 处理elseif标签
+        // /
+        // /{elseif true}
+        // /
+        $this->processElseifCondition($content);
+        // 处理else标签
+        // /
+        // /{else}
+        // /
+        $this->processElseCondition($content);
+        // 处理条件结束标签
+        // /
+        // /{/if}
+        // /
+        // /
+        // /{/loop}
+        // /
+        $this->processEndCondition($content);
+        // 处理loop循环标签
+        // /
+        // /{loop $arr $val}
+        // /
+        // /
+        // /{loop $arr $key $val}
+        // /
+        $this->processLoop($content);
+        // 编译时间记录
+        // /
+        // /{build_time}
+        // /
+        $this->processBuildTime($content);
         // 处理不转换的标签
         // /
         // /{!}{$val}
         // /
         $this->processNoConvert($content);
+        // /合并PHP标签
+        $this->mergePhpContent($content);
         return $content;
     }
 
@@ -319,6 +355,116 @@ class ViewResult extends ActionResult
     }
 
     /**
+     * 处理注释
+     *
+     * @param string $content
+     *            原模板内容
+     * @return void
+     */
+    protected function processComment(string &$content): void
+    {
+        $pattern = $this->getTagPattern('info\s+(.+?)');
+        $content = preg_replace_callback($pattern, function ($match) {
+            return '<?php /*' . $match[1] . '*/ ?>';
+        }, $content);
+    }
+
+    /**
+     * 处理if标签
+     *
+     * @param string $content
+     *            原模板内容
+     * @return void
+     */
+    protected function processIfCondition(string &$content): void
+    {
+        $pattern = $this->getTagPattern('if\s+(.+?)');
+        $content = preg_replace_callback($pattern, function ($match) {
+            return '<?php if( ' . $match[1] . ' ) { ?>';
+        }, $content);
+    }
+
+    /**
+     * 处理else标签
+     *
+     * @param string $content
+     *            原模板内容
+     * @return void
+     */
+    protected function processElseCondition(string &$content): void
+    {
+        $pattern = $this->getTagPattern('else');
+        $content = preg_replace_callback($pattern, function ($match) {
+            return '<?php } else { ?>';
+        }, $content);
+    }
+
+    /**
+     * 处理elseif标签
+     *
+     * @param string $content
+     *            原模板内容
+     * @return void
+     */
+    protected function processElseifCondition(string &$content): void
+    {
+        $pattern = $this->getTagPattern('elseif\s+(.+?)');
+        $content = preg_replace_callback($pattern, function ($match) {
+            return '<?php } elseif(' . $match[1] . ') { ?>';
+        }, $content);
+    }
+
+    /**
+     * 处理条件结束标签
+     *
+     * @param string $content
+     *            原模板内容
+     * @return void
+     */
+    protected function processEndCondition(string &$content): void
+    {
+        $pattern = $this->getTagPattern(preg_quote('/', '/') . '(if|loop)');
+        $content = preg_replace_callback($pattern, function ($match) {
+            return '<?php } ?>';
+        }, $content);
+    }
+
+    /**
+     * 处理loop循环标签
+     *
+     * @param string $content
+     *            原模板内容
+     * @return void
+     */
+    protected function processLoop(string &$content): void
+    {
+        $paramsRexp = '\\$[a-zA-Z_\\x7f-\\xff][a-zA-Z0-9_\\x7f-\\xff]*';
+        $pattern = $this->getTagPattern('loop\s+(.+?)\s+(' . $paramsRexp . ')(\s+(' . $paramsRexp . '))?');
+        $content = preg_replace_callback($pattern, function ($match) {
+            if (isset($match[4])) {
+                return '<?php foreach(' . $match[1] . ' as ' . $match[2] . ' => ' . $match[4] . '){ ?>';
+            } else {
+                return '<?php foreach(' . $match[1] . ' as ' . $match[2] . '){ ?>';
+            }
+        }, $content);
+    }
+
+    /**
+     * 处理编译时间记录标签
+     *
+     * @param string $content
+     *            原模板内容
+     * @return void
+     */
+    protected function processBuildTime(string &$content): void
+    {
+        $pattern = $this->getTagPattern('build_time');
+        $content = preg_replace_callback($pattern, function ($match) {
+            return '<?php /*模板编译于' . date('Y-m-d H:i:s') . '*/ ?>';
+        }, $content);
+    }
+
+    /**
      * 处理静态资源
      *
      * @param string $content
@@ -327,14 +473,11 @@ class ViewResult extends ActionResult
      */
     protected function processUrlTag(string &$content): void
     {
-        if (static::$urlAsset === null) {
-            static::$urlAsset = Application::$app->container->make('@urlAsset');
-        }
-        $urlAsset = static::$urlAsset;
         $pattern = $this->getTagPattern('url(\s+(.+?))?' . preg_quote($this->endTag, '/') . '(.+?)' . preg_quote($this->startTag . '/url', '/'));
-        $content = preg_replace_callback($pattern, function ($match) use ($urlAsset) {
+        $content = preg_replace_callback($pattern, function ($match) {
             $matchName = $match[2];
             $matchPath = $match[3];
+            $urlAsset = Application::$app->container->make('@urlAsset');
             if ($matchName == '') {
                 return $urlAsset->getUrl($matchPath);
             } else {
@@ -391,6 +534,19 @@ class ViewResult extends ActionResult
     {
         $pattern = '/{!}(' . preg_quote($this->startTag) . '.+?' . preg_quote($this->endTag) . ')/s';
         $content = preg_replace($pattern, '\1', $content);
+    }
+
+    /**
+     * 合并PHP标签
+     *
+     * @param string $content            
+     * @return void
+     */
+    protected function mergePhpContent(string &$content): void
+    {
+        $content = preg_replace_callback('/\?\>(\s*)\<\?php/', function ($match) {
+            return $match[1];
+        }, $content);
     }
 
     /**

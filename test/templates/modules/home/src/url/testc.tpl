@@ -1,0 +1,1 @@
+<script type="text/javascript" src="{url js}path/to/c.js{/url}"></script>
