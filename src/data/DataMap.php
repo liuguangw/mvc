@@ -275,7 +275,7 @@ class DataMap implements \Iterator, \ArrayAccess
     public static function getNewInstance(): DataMap
     {
         $data = [];
-        return new DataMap($data);
+        return new static($data);
     }
 }
 

@@ -11,6 +11,8 @@ use liuguang\mvc\services\UrlAsset;
 use liuguang\mvc\services\DefaultUrlAsset;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Cache\Simple\FilesystemCache;
+use liuguang\mvc\services\AbstractSession;
+use liuguang\mvc\session\CacheSession;
 
 /**
  * 容器服务加载
@@ -42,5 +44,7 @@ class ServiceLoader
             $cacheDirectory = PUBLIC_PATH . '/../src/cache';
             return new FilesystemCache('', 30 * 60, $cacheDirectory);
         }, '@cache');
+        // session
+        $container->addClassMap(AbstractSession::class, CacheSession::class, '@session');
     }
 }
