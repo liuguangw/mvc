@@ -13,6 +13,8 @@ use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Cache\Simple\FilesystemCache;
 use liuguang\mvc\services\AbstractSession;
 use liuguang\mvc\session\CacheSession;
+use liuguang\mvc\services\AbstractFileAdapter;
+use liuguang\mvc\file\LocalFileAdapter;
 
 /**
  * 容器服务加载
@@ -46,5 +48,9 @@ class ServiceLoader
         }, '@cache');
         // session
         $container->addClassMap(AbstractSession::class, CacheSession::class, '@session');
+        // 文件存储
+        $container->addCallableMap(AbstractFileAdapter::class, function () {
+            return LocalFileAdapter::createPublicInstance('upload');
+        }, '@file');
     }
 }

@@ -7,7 +7,10 @@
 	"require": {
 		"php": ">=7.1",
 		"symfony/asset": "^4.0",
-		"symfony/cache": "^4.0"
+		"symfony/cache": "^4.0",
+		"aliyuncs/oss-sdk-php": "^2.3",
+		"qiniu/php-sdk": "^7.2",
+		"qcloud/cos-sdk-v5": ">=1.0"
 	},
 	"keywords": [
 		"php7",
