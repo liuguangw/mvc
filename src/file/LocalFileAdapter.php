@@ -74,7 +74,7 @@ class LocalFileAdapter extends AbstractFileAdapter
      *
      * @see \liuguang\mvc\services\AbstractFileAdapter::saveFile()
      */
-    public function saveFile(string $tmpPath, string $savePath, string $contentType = 'application/octet-stream'): void
+    public function saveFile(string $tmpPath, string $savePath, string $contentType = null): void
     {
         if (! is_file($tmpPath)) {
             throw new \Exception('文件' . $tmpPath . '不存在');
@@ -92,7 +92,7 @@ class LocalFileAdapter extends AbstractFileAdapter
      *
      * @see \liuguang\mvc\services\AbstractFileAdapter::writeFile()
      */
-    public function writeFile(string $savePath, string $content, string $contentType = 'application/octet-stream'): void
+    public function writeFile(string $savePath, string $content, string $contentType = null): void
     {
         $distPath = $this->getDistPath($savePath);
         $this->buildDistDir($distPath);

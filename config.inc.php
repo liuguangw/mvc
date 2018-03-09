@@ -10,5 +10,6 @@ return [
     'INPUT_SESSION_KEY' => 'app_session',
     'DEFAULT_EXTRA_HEADERS' => [
         'X-Powered-By: liuguang/mvc 1.0'
-    ]
+    ],
+    'DB_CONFIG' => 'default'
 ];

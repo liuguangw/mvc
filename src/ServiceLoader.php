@@ -15,6 +15,7 @@ use liuguang\mvc\services\AbstractSession;
 use liuguang\mvc\session\CacheSession;
 use liuguang\mvc\services\AbstractFileAdapter;
 use liuguang\mvc\file\LocalFileAdapter;
+use liuguang\mvc\db\Connection;
 
 /**
  * 容器服务加载
@@ -52,5 +53,7 @@ class ServiceLoader
         $container->addCallableMap(AbstractFileAdapter::class, function () {
             return LocalFileAdapter::createPublicInstance('upload');
         }, '@file');
+        // 数据库
+        $container->addClassMap(Connection::class, null, '@db');
     }
 }
