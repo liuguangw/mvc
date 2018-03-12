@@ -1,8 +1,6 @@
 <?php
 namespace liuguang\mvc\db;
 
-use liuguang\mvc\data\RawString;
-
 /**
  * 语句构造器
  *

@@ -11,6 +11,7 @@ use liuguang\mvc\http\action\ActionResult;
 use liuguang\mvc\services\IErrorHandler;
 use liuguang\mvc\services\IRouteErrorHandler;
 use liuguang\mvc\services\RouteHandler;
+use liuguang\mvc\http\RouteException;
 
 /**
  * 应用主类
@@ -182,7 +183,11 @@ class Application
         ]);
         // 当发生错误或者异常时,发送事件
         set_exception_handler(function ($exception) {
-            $this->dispatchEvent(new ApplicationErrorEvent($exception));
+            if ($exception instanceof RouteException) {
+                $this->dispatchEvent(new RouteErrorEvent($exception, $exception->httpCode));
+            } else {
+                $this->dispatchEvent(new ApplicationErrorEvent($exception));
+            }
         });
         set_error_handler(function ($errno, $errstr, $errfile, $errline, $errcontext) {
             $this->dispatchEvent(ApplicationErrorEvent::createCustom($errno, $errstr));
@@ -257,7 +262,10 @@ class Application
         }
         $methods = get_class_methods($controller);
         $actionExists = in_array($actionMethodName, $methods);
-        $actionResult = $controller->invokeAction($actionName, $actionMethodName, $actionExists);
+        if(!$actionExists){
+            throw new RouteException(get_class($controller) . '中的操作方法' . $actionMethodName . '不存在',404);
+        }
+        $actionResult = $controller->invokeAction($actionName, $actionMethodName);
         $this->invokeActionResult($actionResult);
     }
 
