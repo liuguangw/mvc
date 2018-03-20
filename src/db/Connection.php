@@ -154,13 +154,6 @@ class Connection
         return $this;
     }
 
-    private function getQueryStatement(): \PDOStatement
-    {
-        $sql = $this->builder->buildSql();
-        $this->builder = new QueryBuilder($this->pdo);
-        return $this->pdo->query($sql);
-    }
-
     /**
      * 获取第一条记录
      *
@@ -169,8 +162,9 @@ class Connection
      */
     public function fetch(): array
     {
-        $stm = $this->getQueryStatement();
-        return $stm->fetch();
+        $sql = $this->builder->buildSql();
+        $this->builder = new QueryBuilder($this->pdo);
+        return $this->fetchBySql($sql);
     }
 
     /**
@@ -181,8 +175,9 @@ class Connection
      */
     public function fetchAll(): array
     {
-        $stm = $this->getQueryStatement();
-        return $stm->fetchAll();
+        $sql = $this->builder->buildSql();
+        $this->builder = new QueryBuilder($this->pdo);
+        return $this->fetchAllBySql($sql);
     }
 
     /**
@@ -196,7 +191,7 @@ class Connection
         $this->builder->setUpdateData($data);
         $sql = $this->builder->buildSql();
         $this->builder = new QueryBuilder($this->pdo);
-        return $this->pdo->exec($sql);
+        return $this->execSql($sql);
     }
 
     /**
@@ -210,7 +205,7 @@ class Connection
         $this->builder->setInsertData($data);
         $sql = $this->builder->buildSql();
         $this->builder = new QueryBuilder($this->pdo);
-        return $this->pdo->exec($sql);
+        return $this->execSql($sql);
     }
 
     /**
@@ -223,6 +218,91 @@ class Connection
         $this->builder->setDeleteAction();
         $sql = $this->builder->buildSql();
         $this->builder = new QueryBuilder($this->pdo);
+        return $this->execSql($sql);
+    }
+
+    /**
+     * 通过SQL语句获取一条记录
+     *
+     * @param string $sql            
+     * @return array
+     */
+    public function fetchBySql(string $sql): array
+    {
+        $stm = $this->pdo->query($sql);
+        return $stm->fetch();
+    }
+
+    /**
+     * 通过SQL语句获取若干条记录
+     *
+     * @param string $sql            
+     * @return array
+     */
+    public function fetchAllBySql(string $sql): array
+    {
+        $stm = $this->pdo->query($sql);
+        return $stm->fetchAll();
+    }
+
+    /**
+     * 执行SQL语句
+     *
+     * @param string $sql            
+     * @return int 受修改或删除 SQL 语句影响的行数
+     */
+    public function execSql(string $sql): int
+    {
         return $this->pdo->exec($sql);
+    }
+
+    /**
+     * 启动事务
+     *
+     * @return bool
+     */
+    public function beginTransaction(): bool
+    {
+        return $this->pdo->beginTransaction();
+    }
+
+    /**
+     * 检查是否在一个事务内
+     *
+     * @return bool
+     */
+    public function inTransaction(): bool
+    {
+        return $this->pdo->inTransaction();
+    }
+
+    /**
+     * 提交一个事务
+     *
+     * @return bool
+     */
+    public function commit(): bool
+    {
+        return $this->pdo->commit();
+    }
+
+    /**
+     * 回滚一个事务
+     *
+     * @return bool
+     */
+    public function rollBack(): bool
+    {
+        return $this->pdo->rollBack();
+    }
+
+    /**
+     * 获取错误信息
+     *
+     * @return array
+     */
+    public function errorInfo(): array
+    {
+        return $this->pdo->errorInfo();
     }
 }
