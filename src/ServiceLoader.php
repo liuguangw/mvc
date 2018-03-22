@@ -16,6 +16,8 @@ use liuguang\mvc\session\CacheSession;
 use liuguang\mvc\services\AbstractFileAdapter;
 use liuguang\mvc\file\LocalFileAdapter;
 use liuguang\mvc\db\Connection;
+use liuguang\mvc\page\PageHandler;
+use liuguang\mvc\page\DefaultPageHandler;
 
 /**
  * 容器服务加载
@@ -55,5 +57,7 @@ class ServiceLoader
         }, '@file');
         // 数据库
         $container->addClassMap(Connection::class, null, '@db');
+        // 分页
+        $container->addClassMap(PageHandler::class, DefaultPageHandler::class, '@pageHandler');
     }
 }
