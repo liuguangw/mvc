@@ -26,10 +26,15 @@ class Connection
      */
     private $builder;
 
-    public function __construct(\PDO $pdo)
+    /**
+     *
+     * @param string $configName
+     *            配置别名
+     */
+    public function __construct(string $configName = '')
     {
-        $this->pdo = $pdo;
-        $this->builder = new QueryBuilder($pdo);
+        $this->pdo = $this->getPdo($configName);
+        $this->builder = new QueryBuilder($this->pdo);
     }
 
     /**
@@ -40,12 +45,12 @@ class Connection
      * @return Connection
      * @throws \Exception
      */
-    public static function getInstance(string $configName = ''): Connection
+    private function getPdo(string $configName): \PDO
     {
         if ($configName == '') {
             $configName = Application::$app->config->getValue('DB_CONFIG');
         }
-        $configPath = APP_CONFIG_PATH . '/./' . $configName . '.php';
+        $configPath = APP_CONFIG_PATH . '/./db/' . $configName . '.php';
         if (! is_file($configPath)) {
             throw new \Exception('数据库配置' . $configName . '不存在');
         }
@@ -55,8 +60,7 @@ class Connection
         $username = $dbConfigMap->getValue('username', null);
         $passwd = $dbConfigMap->getValue('passwd', null);
         $options = $dbConfigMap->getValue('options', null);
-        $pdo = new \PDO($dsn, $username, $passwd, $options);
-        return new static($pdo);
+        return new \PDO($dsn, $username, $passwd, $options);
     }
 
     /**
@@ -229,7 +233,7 @@ class Connection
      */
     public function fetchBySql(string $sql): array
     {
-        $stm = $this->pdo->query($sql);
+        $stm = $this->getQueryStatement($sql);
         return $stm->fetch();
     }
 
@@ -241,7 +245,7 @@ class Connection
      */
     public function fetchAllBySql(string $sql): array
     {
-        $stm = $this->pdo->query($sql);
+        $stm = $this->getQueryStatement($sql);
         return $stm->fetchAll();
     }
 
@@ -250,10 +254,33 @@ class Connection
      *
      * @param string $sql            
      * @return int 受修改或删除 SQL 语句影响的行数
+     * @throws \Exception
      */
     public function execSql(string $sql): int
     {
-        return $this->pdo->exec($sql);
+        $result = $this->pdo->exec($sql);
+        if ($result === false) {
+            $err = $this->errorInfo();
+            throw new \Exception('['.$err[0].']'.$err[2]);
+        }
+        return $result;
+    }
+
+    /**
+     * 执行SQL查询
+     *
+     * @param string $sql            
+     * @return \PDOStatement
+     * @throws \Exception
+     */
+    private function getQueryStatement(string $sql): \PDOStatement
+    {
+        $result = $this->pdo->query($sql);
+        if ($result === false) {
+            $err = $this->errorInfo();
+            throw new \Exception('['.$err[0].']'.$err[2]);
+        }
+        return $result;
     }
 
     /**
