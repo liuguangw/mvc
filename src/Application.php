@@ -72,6 +72,8 @@ class Application
      */
     public $container;
 
+    public $sessionStarted = false;
+
     public function __construct()
     {
         $this->mvcSourcePath = __DIR__;
@@ -262,8 +264,8 @@ class Application
         }
         $methods = get_class_methods($controller);
         $actionExists = in_array($actionMethodName, $methods);
-        if(!$actionExists){
-            throw new RouteException(get_class($controller) . '中的操作方法' . $actionMethodName . '不存在',404);
+        if (! $actionExists) {
+            throw new RouteException(get_class($controller) . '中的操作方法' . $actionMethodName . '不存在', 404);
         }
         $actionResult = $controller->invokeAction($actionName, $actionMethodName);
         $this->invokeActionResult($actionResult);

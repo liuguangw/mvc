@@ -12,9 +12,9 @@ class ObserverTest extends TestCase
             'b' => 2
         ];
         $obj = new ObserverData($dataArray);
-        $this->assertFalse($obj->getHasChanged());
-        $dataArray['c'] = 6;
-        $this->assertTrue($obj->getHasChanged());
+        $this->assertFalse($obj->hasChanged());
+        $obj->setValue('a', 3);
+        $this->assertTrue($obj->hasChanged());
     }
 
     public function test2()
@@ -24,11 +24,15 @@ class ObserverTest extends TestCase
             'b' => 2
         ];
         $obj = new ObserverData($dataArray);
-        $this->assertFalse($obj->getHasChanged());
-        $dataArray['a'] = 6;
-        $this->assertTrue($obj->getHasChanged());
-        $dataArray['a'] = 1;
-        $this->assertFalse($obj->getHasChanged());
+        $this->assertFalse($obj->hasChanged());
+        $obj->setValue('a', 66);
+        $this->assertTrue($obj->hasChanged());
+        $obj->setValue('a', 1);
+        $this->assertFalse($obj->hasChanged());
+        $obj->remove('b');
+        $this->assertTrue($obj->hasChanged());
+        $obj->setValue('b', 2);
+        $this->assertFalse($obj->hasChanged());
     }
 
     public function test3()
@@ -38,13 +42,9 @@ class ObserverTest extends TestCase
             'b' => 2
         ];
         $obj = new ObserverData($dataArray);
-        $this->assertFalse($obj->getHasChanged());
+        $this->assertFalse($obj->hasChanged());
         unset($dataArray['a']);
-        unset($dataArray['b']);
-        $this->assertTrue($obj->getHasChanged());
-        $dataArray['b'] = 2;
-        $dataArray['a'] = 1;
-        $this->assertFalse($obj->getHasChanged());
+        $this->assertFalse($obj->hasChanged());
     }
 }
 

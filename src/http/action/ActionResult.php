@@ -69,6 +69,10 @@ abstract class ActionResult
                 header($value);
             }
         }
+        // session提交
+        if (Application::$app->sessionStarted) {
+            Application::$app->getService('session')->commit();
+        }
         // 输出
         $this->outputContent();
     }
