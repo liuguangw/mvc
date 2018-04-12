@@ -83,10 +83,14 @@ class Application
         if (! defined('APP_CONFIG_PATH')) {
             define('APP_CONFIG_PATH', PUBLIC_PATH . '/../src/config');
         }
-        $context = '';
-        $pos = strrpos($_SERVER['SCRIPT_NAME'], '/');
-        if ($pos > 0) {
-            $context = substr($_SERVER['SCRIPT_NAME'], 0, $pos);
+        if (defined('APP_CONTEXT')) {
+            $context = constant('APP_CONTEXT');
+        } else {
+            $context = '';
+            $pos = strrpos($_SERVER['SCRIPT_NAME'], '/');
+            if ($pos > 0) {
+                $context = substr($_SERVER['SCRIPT_NAME'], 0, $pos);
+            }
         }
         $this->appContext = $context;
     }
